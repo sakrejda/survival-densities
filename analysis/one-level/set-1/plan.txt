@@ -1,0 +1,26 @@
+#1 Load parameter values for all set-1 simulations.
+#2 For each set-1 fit set (5 chains):
+  #a load all five chains
+  #b1 calculate split-R-hat per fit, store, flag targets with high R-hat
+  #b2 check for divergent iterations after warmup 
+  #c calculate 10, 50, 90 percent coverage based on true parameter, use
+  #  HPD rather than qunatiles for calculation from samples.
+  #d calculate theoretical quantiles from true parameters
+  #e calculate 10, 50, 90 percent coverage for all theoretical quantiles,
+  #  use HPD rather than quantiles for calculation from samples.
+  #f write table per target (sim-fit pair)
+#3 Summarize per-target tables to across-target single table.
+
+fits <- dir(path=getwd(), pattern='.*\\.out[0-9]') %>% 
+  data.frame(file=., check.names=FALSE) %>% 
+  tidyr::separate(file, into=c('model','simulation', 
+    'parameter_set', 'data_set', 'file_type'), sep='[_\\.]') %>%
+  dplyr::mutate(
+    chain=substr(file_type, nchar(file_type), nchar(file_type)),
+    parameter_set = gsub('[a-z_-]*', '', parameter_set) %>% as.numeric,
+    data_set = gsub('[a-z_-]*', '', data_set) %>% as.numeric
+  ) %>% `[[<-`('file_type',value=NULL)
+
+
+
+

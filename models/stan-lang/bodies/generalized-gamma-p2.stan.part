@@ -1,0 +1,42 @@
+
+parameters {
+  real k_0;
+  real mu_0;
+  real sigma_0;
+}
+
+
+model {
+  k_0 ~ normal(0,sigma_log);
+  mu_0 ~ normal(0,sigma_identity);
+  sigma_0 ~ normal(0,sigma_log);  
+
+  {
+  vector[n_obs] k;
+  vector[n_obs] mu;
+  vector[n_obs] sigma;
+  for ( i in 1:n_obs )
+    k[i] = kappa[1] * exp(k_0);
+  for ( i in 1:n_obs )
+    mu[i] = kappa[2] * mu_0;  
+  for ( i in 1:n_obs )
+    sigma[i] = kappa[3] * exp(sigma_0);  
+
+  for ( i in 1:n_obs ) {
+    target += generalized_gamma_lpdf_2S(t_delta[i], k[i], mu[i], sigma[i]);
+    if (t_truncate[i] != positive_infinity())
+      target += -generalized_gamma_lcdf_2S(t_truncate[i], k[i], mu[i], sigma[i]);      
+  }
+  }
+}
+
+generated quantities {
+  real g_k;
+  real g_mu;
+  real g_sigma;
+  g_k = kappa[1] * exp(k_0);
+  g_mu = kappa[2] * mu_0;  
+  g_sigma = kappa[3] * exp(sigma_0);  
+}
+
+

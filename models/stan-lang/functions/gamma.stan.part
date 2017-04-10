@@ -1,0 +1,43 @@
+
+// ---- gamma 
+
+// Naive implementation of the Gamma density.
+// @param x Value to evaluate density at.
+// @param alpha Shape parameter.
+// @param beta Scale parameter.
+real gamma_pdf_1S(real x, real alpha, real beta) {
+  real d;
+  d = 1 / beta / tgamma(alpha) *
+    (x / beta)^(alpha - 1) * exp(-x/beta);
+  return d;
+}
+
+// @describeIn gamma_pdf_1S Naive implementation of the Gamma log
+// density.
+real gamma_lpdf_1S(real x, real alpha, real beta) {
+  real d;
+  d = -log(beta) - lgamma(alpha) + 
+    (alpha-1)*(log(x) - log(beta)) - x/beta;
+  return d;
+}
+
+// @describeIn gamma_pdf_1S Naive implementation of the Gamma
+// cumulative density.
+real gamma_cdf_1S(real x, real alpha, real beta) {
+  real d;
+  d = gamma_p(alpha, x/beta);
+  return(d);
+}
+
+
+// @describeIn gamma_pdf_1S Naive implementation of the Gamma log
+// cumulative density.
+real gamma_lcdf_1S(real x, real alpha, real beta) {
+  real d;
+  d = log(gamma_p(alpha, x/beta));
+  return(d);
+}
+
+
+
+

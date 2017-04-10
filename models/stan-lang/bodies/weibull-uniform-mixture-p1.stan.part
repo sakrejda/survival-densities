@@ -1,0 +1,38 @@
+
+parameters {
+  real alpha_0;
+  real beta_0;
+  real q_0; 
+}
+
+model {
+  alpha_0 ~ normal(0, sigma_log);
+  beta_0 ~ normal(0, sigma_log);
+  q_0 ~ normal(0, sigma_logit);
+
+  {
+  vector[n_obs] alpha;
+  vector[n_obs] beta;
+  vector[n_obs] q;
+  real A;
+  real B;
+  for ( i in 1:n_obs ) 
+      alpha[i] = kappa[1] * exp(alpha_0);
+  for ( i in 1:n_obs ) 
+      beta[i] = kappa[2] * exp(beta_0);  
+  for ( i in 1:n_obs ) 
+      q[i] = inv_logit(q_0);
+  
+  for ( i in 1:n_obs ) {
+    target += weibull_uniform_mixture_lpdf_1S(t_delta[i], 
+      t_max, q[i], alpha[i], beta[i]);
+    if (t_truncate[i] != positive_infinity()) 
+      target += -weibull_uniform_mixture_lcdf_1S(t_truncate[i], 
+        t_max, q[i], alpha[i], beta[i]);
+  }
+  }
+}
+
+
+
+

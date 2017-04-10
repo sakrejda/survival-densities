@@ -1,0 +1,60 @@
+
+//// ---- gamma_exp_sum_gamma_mix 
+
+//' Naive implementation of the Gamma-Exponential sum self-mixture mixture density.
+//' @param x Value to evaluate density at.
+//' @param q Mixing parameter.
+//' @param alpha Shape parameter for gamma component.
+//' @param beta Scale parameter for gamma component.
+//' @param delta Scale parameter for exponential component.
+real gamma_exp_sum_gamma_mix_pdf_1S(real x, real q, real alpha, real beta, real delta) {
+  real dg;
+  real dges;
+  real d;
+  dg = gamma_pdf_1S(x, alpha, beta);
+  dges = gamma_exp_sum_pdf_1S(x, alpha, beta, delta);
+  d = (1-q)*dg + q*dges;
+  return d;
+}
+
+
+//' @describeIn gamma_exp_sum_gamma_mix_pdf_1S Naive implementation of the Gamma-Exponential sum self-mixture mixture log density.
+real gamma_exp_sum_gamma_mix_lpdf_1S(real x, real q, real alpha, real beta, real delta) {
+  real dg;
+  real dges;
+  real d;
+  dg = gamma_lpdf_1S(x, alpha, beta);
+  dges = gamma_exp_sum_lpdf_1S(x, alpha, beta, delta);
+  d = log_sum_exp(log(1-q)+dg, log(q)+dges);
+  return d;
+}
+
+
+//' @describeIn gamma_exp_sum_gamma_mix_pdf_1S Naive implementation of the
+//' Gamma-Exponential sum self-mixture mixture cumulative density.
+real gamma_exp_sum_gamma_mix_cdf_1S(real x, real q, real alpha, real beta, real delta) {
+  real dg;
+  real dges;
+  real d;
+  dg = gamma_cdf_1S(x, alpha, beta);
+  dges = gamma_exp_sum_cdf_1S(x, alpha, beta, delta);
+  d = (1-q)*dg + q*dges;
+  return d;
+}
+
+//' @describeIn gamma_exp_sum_gamma_mix_pdf_1S Naive implementation of the
+//' Gamma-Exponential sum self-mixture mixture log cumulative density.
+real gamma_exp_sum_gamma_mix_lcdf_1S(real x, real q, real alpha, real beta, real delta) {
+  real dg;
+  real dges;
+  real d;
+  dg = gamma_lcdf_1S(x, alpha, beta);
+  dges = gamma_exp_sum_lcdf_1S(x, alpha, beta, delta);
+  d = log_sum_exp(log(1-q)+dg, log(q)+dges);
+  return d;
+}
+
+
+
+
+

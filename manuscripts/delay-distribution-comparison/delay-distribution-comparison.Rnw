@@ -1,0 +1,670 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{distributions}
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{amssymb}
+\usepackage{amsmath} 
+\usepackage{mathtools}
+\usepackage{xfrac}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{fancyvrb}
+\usepackage[
+    backend=biber,
+    style=numeric,
+    natbib=true,
+    url=false
+]{biblatex}
+\addbibresource{references.bib}
+
+\RecustomVerbatimCommand{\VerbatimInput}{VerbatimInput}%
+{fontsize=\footnotesize,
+ %
+ frame=lines,  % top and bottom rule only
+ framesep=2em, % separation between frame and text
+ rulecolor=\color{Gray},
+ %
+ label=\fbox{\color{Black}},
+ labelposition=topline,
+ %
+% commandchars=\|\(\), % escape character and argument delimiters for
+                      % commands within the verbatim
+% commentchar=*        % comment character
+}
+
+\title{Modeling delay distributions}
+\author{Krzysztof Sakrejda}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+<<'preliminaries', cache=FALSE, echo=FALSE>>=
+knitr::read_chunk(path='R/api.R')
+knitr::read_chunk(path='R/api-numerical.R')
+knitr::read_chunk(path='R/implement-weibull.R')
+knitr::read_chunk(path='R/implement-gamma.R')
+knitr::read_chunk(path='R/implement-gamma-exp-sum.R')
+knitr::read_chunk(path='R/implement-gamma-exp-sum-gamma-mix.R')
+knitr::read_chunk(path='R/implement-weibull-uniform-mixture.R')
+knitr::read_chunk(path='R/implement-generalized-gamma.R')
+knitr::read_chunk(path='R/implement-log-gamma.R')
+@
+
+<<'numerical_utilities', echo=FALSE>>=
+@
+<<'density_api', echo=FALSE>>=
+@
+
+\newpage
+
+\section{Shared notation}
+
+\begin{table}[h]
+  \caption{All models share common notation.}
+  \begin{center}
+    $\label{tab:notation}
+    \begin{array}{ll}
+      i                    &\text{index for unit.} \\
+      N                    &\text{total number of units in a group.} \\
+      j, J                 &\text{index for province, number of provinces} \\
+      k, K                 &\text{index for district, total number of districts} \\
+      m, M                 &\text{index for subdistrict, total number of subdistricts} \\
+      d, D                 &\text{index for data delivery, number of deliveries} \\
+      q, Q                 &\text{index for time interval, number of time intervals} \\ 
+      t                    &\text{absolute continuous date/time.} \\
+      t^*                  &\text{absolute \emph{current} continuous date/time.} \\
+      t^\dagger            &\text{absolute continuous date/time of analysis.} \\
+      t_d                  &\text{observed time of a data delivery.} \\
+      t_r                  &\text{observed time when unit is reported.} \\
+      t_\delta             &t_r - t_s\text{reporting delay.} \\
+      t_s                  &\text{estimated time of onset.} \\
+      t_0                  &\text{study start time, minimum possible } t_s \\
+      x_{[t_a,t_b)}(t)     & \text{number of units observed at time } t \text{ for the interval } [t_a,t_b)  \\
+      x_{[t_a,t_b),d}      & \text{number of units observed in delivery } d \text{ for the interval } [t_a,t_b)  \\
+      x_{q,d}              & \text{number of units observed in delivery } d \text{ for interval } q  \\
+      z_{[t_a,t_b)}        & \text{number of units in the interval } [t_a,t_b)  \\
+      z_{q}                & \text{number of units in the interval } q  \\
+    \end{array}
+    $
+  \end{center}
+\end{table}
+
+\clearpage
+\section{Delay models}
+
+\subsection{Weibull}
+
+For $t_\delta \in \mathbb{R}^+$, and parameters $\alpha \in \mathbb{R}^+$ (shape) and $\beta
+\in \mathbb{R}^+$ (scale) the Weibull density is:
+
+\begin{equation}
+  f_W(t_\delta|\alpha, \beta) = \frac{\alpha}{\beta}
+    \left(\frac{t_\delta}{\beta}\right)^{(\alpha-1)}
+    \exp\left(-\left(\frac{t_\delta}{\beta}\right)^\alpha\right)
+\end{equation}
+
+with the corresponding cumulative density:
+
+\begin{equation}
+  F_W(t_\delta|\alpha, \beta) = 1 - \exp\left(
+    -\left[\frac{t_\delta}{\beta}\right]^{\alpha}
+  \right)
+\end{equation}
+
+For computation we typically use the log-density and log cumulative
+density.  The log density simplifies to
+
+\begin{equation}
+  \log f_W(t_\delta|\alpha, \beta) = 
+    \log \alpha - \log \beta + 
+    (\alpha-1)\left[\log t_\delta - \log \beta \right] - 
+    \left(\sfrac{t_\delta}{\beta}\right)^\alpha
+\end{equation}
+
+\subsubsection{Implementation}
+
+The density coded in R:
+
+<<'weibull'>>=
+@
+
+The complete Stan implementation of a truncated Weibull model
+
+\VerbatimInput{functions/weibull.stan.part}
+
+
+\subsection{Gamma}
+
+For $t_\delta$, $\alpha$, $\beta$ all $\in \mathbb{R}^+$ the Gamma
+density is:
+
+\begin{equation}
+  f_G(t_\delta|\alpha, \beta) = \frac{1}{\beta\Gamma(\alpha)}
+   \left(\frac{t_\delta}{\beta}\right)^{\alpha-1}
+   \exp\left(-\frac{t_\delta}{\beta}\right)
+\end{equation}
+
+The corresponding cumulative density is defined using the lower incomplete
+normalized gamma function:
+
+\begin{equation}
+  F_G(t_\delta|\alpha,\beta) = \frac
+    {\gamma(\alpha, \sfrac{t_\delta}{\beta})}
+    {\Gamma(\alpha)}
+\end{equation}
+
+The log density used in computation is
+
+\begin{equation}
+\log f_G(t_\delta|\alpha, \beta) = -\log\beta - \log\Gamma(\alpha) +
+  (\alpha-1)\left[\log t_\delta - \log \beta \right] - \frac{t}{\beta}
+\end{equation}
+
+The log cumulative density is simply
+
+\begin{equation}
+  \log F_G(t_\delta|\alpha, \beta) = 
+    \log \gamma(\alpha, \sfrac{t_\delta}{\beta}) -
+    \log\Gamma(\alpha)
+\end{equation}
+
+In practice $\log \gamma$ and $\log \Gamma$ are available as special
+functions in both Stan and R but so is the normalized lower incomplete
+gamma function itself. In R it is available as the cumulative density
+of the Gamma density ($\text{pgamma}$) and in Stan it is called
+$\text{gamma\_p}$.
+
+\subsubsection{Implementation}
+
+<<'gamma'>>=
+@ 
+
+
+\subsection{k-component Weibull mixture (KW)}
+
+The general k-Weibull mixture is written as:
+
+\begin{equation}
+  f_{KW}(t_\delta|q, \alpha, \beta) = \sum_{k=1}^K 
+    q_k f_W(t_\delta|\alpha_k, \beta_k)
+\end{equation}
+
+With k-vector $q > 0$, k-vector $\alpha >0$, and k-vector $\beta >0$.
+
+Here the order of integration and summation can be interchanged so
+the corresponding cumulative density is:
+
+\begin{equation}
+  F_{KW}(t_\delta|q, \alpha, \beta) = \sum_{k=1}^K
+    q_k F_W(t_\delta|\alpha_k, \beta_k)
+\end{equation}
+
+See the contaminated Weibull section below for a numerically stable
+log-density calculation for mixtures.
+
+\subsubsection{Implementation}
+
+The complete Stan implementation of a truncated k-Weibull mixture model
+
+\VerbatimInput{full/weibull-k-mixture-p1.stan}
+
+\subsection{Weibull-uniform mixture (Contaminated Weibull, CW)}
+
+For $t_\delta$, $\alpha$, $\beta$, $f_W$, and $F_W$ as described above along with mixing
+parameter $q$, a contaminated Weibull can be defined as
+
+\begin{equation}
+  f_{CW}(t_\delta|q, \alpha, \beta) = 
+    (1-q) \times f_W(t_\delta|\alpha, \beta) + 
+       q  \times f_U(t_\delta|0, t_\text{max})
+\end{equation}
+
+Where $f_U$ is the uniform density
+
+\begin{equation}
+  f_U = \frac{1}{t_\text{max}-0} = \frac{1}{t_\text{max}}
+\end{equation}
+
+Interchanging the order of integration and summation as above, the corresponding cumulative
+density is
+
+\begin{equation}
+  F_{CW} = (1-q) \times F_W(t_\delta|\alpha,\beta) + 
+              q  \times F_U(t_\delta|0, t_\text{max})
+\end{equation}
+
+For computation we again use the log density and log cumulative density,
+but these must be exponentiated to calculate their sum.  To avoid
+numerical overflow or underflow we use the `log-sum-exp` trick
+\ref{app:log-sum-exp}
+
+
+\begin{multline}
+  \log F_{CW}(t_\delta|t_\text{max}, q, \alpha, \beta) = \\
+    \log\left[ \exp(\log(1-q) + \log F_W(t_\delta|\alpha, \beta)) +
+               \exp(\log q - \log t_\text{max} + \log t_\delta)
+    \right]
+\end{multline}
+
+\subsubsection{Implementation}
+
+The density implemented in R
+
+<<'weibull_uniform_mixture'>>=
+@
+
+The complete Stan implementation of a truncated Weibull-uniform mixture model
+
+\VerbatimInput{functions/weibull-uniform-mixture.stan.part}
+
+\subsection{Standard Generalized Gamma Density}
+
+For $t_\delta$, $\alpha$, $\beta$, and $\nu$ all $\in \mathbb{R}$ the
+generalized gamma (GG1) distribution can be defined as
+
+\begin{equation}
+  f_{GG1}(t_\delta|\alpha, \beta, \nu) = 
+    \frac{\nu}{\beta\Gamma(\frac{\alpha}{\nu})}
+    \left(\frac{t_\delta}{\beta}\right)^{(\alpha-1)}
+    \exp\left(-\left(\frac{t_\delta}{\beta}\right)^\nu\right)
+\end{equation}
+
+The matching cumulative density is defined in terms of the normalized
+lower incomplete gamma function
+
+\begin{equation}
+  F_{GG1}(t_\delta|\alpha, \beta, \nu) = \frac
+    {\gamma\left(\sfrac{\alpha}{\nu}, \left(\sfrac{t_\delta}{\beta}\right)^\nu\right)}
+    {\Gamma\left(\sfrac{\alpha}{\nu}\right)}
+\end{equation}
+
+The log density is written
+
+\begin{equation}
+  \log f_{GG1}(t_\delta|\alpha,\beta,\nu) = 
+    \log\nu - \log\beta - \log\Gamma(\sfrac{\alpha}{\nu}) +
+    (\alpha-1)\left[\log t_\delta - \log\beta\right] - 
+    \left(\frac{t_\delta}{\beta}\right)^\nu
+\end{equation}
+
+The corresponding log cumulative density is
+
+\begin{equation}
+  \log F_{GG1}(t_\delta|\alpha,\beta,\nu) =
+    \log\gamma(\sfrac{\alpha}{\nu}, (\sfrac{t_\delta}{\beta})^\nu) - 
+    \log\Gamma(\sfrac{\alpha}{\nu})
+\end{equation}
+
+In practice the lower incomplete gamma function is available (as noted
+in the Gamma distribution cumulative density).  
+
+\subsubsection{Implementation}
+
+The density implemented in R
+
+<<'standard_generalized_gamma'>>=
+@
+
+The complete Stan implementation of a truncated standard generalized gamma model. 
+
+\VerbatimInput{functions/generalized-gamma.stan.part}
+
+
+\subsection{Generalized Gamma from Lawless (1992)}
+
+\citet{lifetime-data-Lawless-1992} mentions 
+
+\subsubsection{Implementation}
+
+<<'lawless_generalized_gamma'>>=
+@
+
+The complete Stan implementation of a truncated generalized gamma model
+following the \citet{lifetime-data-Lawless-1992} parameterization.
+
+\VerbatimInput{functions/generalized-gamma.stan.part}
+
+The original log-generalized gamma distribution is:
+
+<<'log_gamma'>>=
+@
+
+\subsection{Gamma-Exponential Sum density.}
+
+For $t_\delta \in \mathbb{R}^+$, and parameters $\alpha \in
+\mathbb{R}^+$ (shape), $\beta \in \mathbb{R}^+$ (scale), and $\delta \in 
+\mathbb{R}^+$ where $\delta > \beta$, we define a model:
+
+We begin with a standard Gamma delay model for $U$, and an Exponential model 
+for $V$, and construct two new variables:
+
+\begin{align}
+U &\sim \text{Gamma}(\alpha, \beta) \\
+V &\sim \text{Exp}(\delta) \\
+T &= U + V  \\
+Y &= U + 2V
+\end{align}
+
+Here $T$ is going to be our observed variable, $U$ is the contribution 
+from the typical delay process, $V$ is the contribution from the 
+additional, poorly-understood, delay. $Y$ is not observed and we will 
+need to get rid of it by integration. After integrating out $Y$, we arrive 
+at a density for the Gamma-Exponential sum:
+
+\begin{equation}
+  f_{GES}(t_\delta|\alpha, \beta, \delta) = 
+   \frac{\delta^{\alpha-1}}{(\delta-\beta)^\alpha} 
+   \left(e^{-\frac{t_\delta}{\delta}}\right) 
+   \frac{\gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)t_\delta\right)}{\Gamma(\alpha)}
+\end{equation}
+
+with the corresponding cumulative density:
+
+\begin{equation}
+  F_{GES}(t_\delta|\alpha, \beta, \delta) = 
+    \frac{\gamma\left(\alpha, \frac{t_\delta}{\beta}\right)}{\Gamma(\alpha)} - 
+    \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^{-\alpha} 
+    \frac{e^{\frac{-t_\delta}{\delta}}}{\beta^\alpha} 
+    \frac{\gamma\left(\alpha,\left(\frac{1}{\beta}-\frac{1}{\delta}\right)t_\delta\right)}{\Gamma(\alpha)}
+\end{equation}
+
+For computation we typically use the log-density and log cumulative
+density.  The log density simplifies to:
+
+\begin{equation}
+  \log f_{GES}(t_\delta|\alpha, \beta, \delta) = 
+    (\alpha-1) \log\delta - \alpha \log (\delta-\beta) - \frac{t_\delta}{\delta}
+    + \log\gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)t_\delta\right)
+    - \log\Gamma(\alpha)
+\end{equation}
+
+
+\subsubsection{Implementation}
+
+The density coded in R:
+
+<<'gamma-exp-sum'>>=
+@
+
+The complete Stan implementation of a truncated Weibull model
+
+\VerbatimInput{functions/gamma-exp-sum.stan.part}
+
+
+
+\subsection{Mixture of Gamma and Gamma-Exponential Sum density.}
+
+The Gamma-Exponential sum density is interesting but by itself not
+useful in introducing a tail separate from the main mass of the 
+distribution as each individual delay is assumed to have a contribution 
+from both density components.  What we really want is for only some 
+delays to be affected by the exponential component while the rest follow
+a purely gamma component.  To do this we mix the Gamma-Exponential
+sum density with a Gamma density:
+
+For $t_\delta \in \mathbb{R}^+$, and parameters $\alpha \in
+\mathbb{R}^+$ (shape), $\beta \in \mathbb{R}^+$ (scale), and $\delta \in 
+\mathbb{R}^+$ where $\delta > \beta$, and $q \in [0,1]$ we have:
+
+\begin{multline}
+  p_T(t_\delta|\alpha, \beta, \delta, q) = 
+       q  * p_{GES}(z=t_\delta|\alpha, \beta) + 
+         (1-q) * p_X(x=t|\alpha, \beta, \delta)
+\end{multline}
+
+Notice that the $\alpha$ and $\beta$ parameters are shared between
+the Gamma component of the mixture and the Gamma component of the 
+Gamma-Exponential sum because our derivation of the Gamma-Exponential
+sum density allowed us to maintain the original Gamma parameters
+rather than opting for a more typical three-parameter density like 
+the generalized exponential.
+
+\subsubsection{Implementation}
+
+As with the Weibull-Uniform mixture we rely on the log-sum-exp trick
+in actually computing this density.  The density coded in R:
+
+<<'gamma-exp-sum-gamma-mix'>>=
+@
+
+The complete Stan implementation of a truncated Weibull model
+
+%\VerbatimInput{functions/gamma-exp-sum-gamma-mix.stan.part}
+
+
+\section{Density API} 
+
+Functions ending in \texttt{\_pdf} are densities.  Functions ending in
+\texttt{\_lpdf} are log-densities.  Functions ending in \texttt{\_cdf}
+are cumulative densities.  Functions ending in \texttt{\_lcdf} are log
+cumulative densities.  The same goes for mass functions.  Exteranlly
+only these functions should be called and they will be plummed to the
+appropriate numbered parameterization using the '\texttt{method}' argument.
+
+<<'density_api'>>=
+@
+
+\section{Numerical Issues}
+
+When faced with a `log-sum-exp` series of operations it is easy to loose 
+numerical precision so we use a modified series of operations to calculate the sum as:
+
+\begin{multline}
+  \log(\exp(a) + \exp(b)) = \\
+    \max(a, b) + \log(\exp(a - \max(a, b))) + \log(\exp(b - \max(a, b)))
+\end{multline}
+
+which is known as the `log-sum-exp` trick and is implemented for two
+arguments as well as for a vector arugment in a generalized version in
+Stan as the $\text{log\_sum\_exp}$ function.  The resulting log density
+calculation for a Weibull-uniform mixture is:
+
+\begin{align}
+  a &= \log(1-q) + \log f_W(t_\delta| \alpha, \beta) \\
+  b &= \log(  q) + \log f_U(t_\delta| 0, t_\text{max}) \\
+  \log f_{CW}(t_\delta|q, \alpha, \beta) &= \text{log\_sum\_exp}(a,b) 
+\end{align}
+
+A close implementation in R is
+
+<<'numerical_utilities'>>=
+@
+
+\section{Derivations}
+
+\subsubsection{Gamma-Exponential sum change of variables}
+
+This is standard mult-variable change of variables.  We begin with a standard Gamma delay model for $U$, and an Exponential model for $V$, and construct two new variables:
+
+\begin{align}
+U &\sim \text{Gamma}(\alpha, \beta) \\
+V &\sim \text{Exp}(\delta) \\
+X &= U + V  \\
+Y &= U + 2V
+\end{align}
+
+Here $X$ is going to be our observed variable, $U$ is the contribution from the typical delay process, $V$ is the contribution from the 'desk delay' (it's like the pieces currently taken care of by the uniform).  $Y$ is not observed and we'll need to get rid of it but for a change-of-variables you can't just drop dimensions from the problem.
+
+The transformation is $(x,y) = f(u,v)$ and the inverse is $(u,v) = g(x,y)$, resulting in the change of variables as follows:
+
+\begin{align}
+p_{U,V}(u,v|\alpha, \beta, \delta) &= p_U(u|\alpha, \beta) p_V(v|\delta) \\
+p_{X,Y}(x,y|\alpha, \beta, \delta) &= p_{U,V}(g(u,v)|\alpha, \beta, \delta) |J_{g(x,y)}|
+\end{align}
+
+Our choice of $X$ and $Y$ leads to a convenient $|J_{g(x,y)}|$ of 1.
+
+\subsubsection{Derivation of Gamma-Exponential sum density} 
+
+We do not observe $Y$, only $X$, so we get the marginal of $X$ by integrating over $Y$ (the domain runs from $x$ to $2x$)
+
+\begin{multline}
+p_X(x|\alpha, \beta, \delta) = \int_x^{2x} p_{X,Y}(x,y) dy \\
+  = \int_x^{2x} \frac{(2x-y)^{\alpha-1}}{\beta^\alpha\Gamma(\alpha)}e^{-\frac{1}{\beta}(2x-y)}
+      \frac{1}{\delta}e^{-\frac{1}{\delta}(y-x)}|1|dy
+\end{multline}
+
+Then we isolate the constants outside the integral and simplify:
+
+\begin{multline}
+p_X(x|\alpha, \beta, \delta) = \frac{e^{-\frac{2x}{\beta}+\frac{x}{\delta}}}{\beta^\alpha\Gamma(\alpha)\delta} 
+      \int_x^{2x} (2x-y)^{\alpha-1}e^{\frac{y}{\beta}-\frac{y}{\delta}}dy 
+  = \frac{e^{-x\left(\frac{2}{\beta}-\frac{1}{\delta}\right)}}{\beta^\alpha\Gamma(\alpha)\delta} 
+      \int_x^{2x} (2x-y)^{\alpha-1}e^{y\left(\frac{1}{\beta}-\frac{1}{\delta}\right)}dy \\
+\end{multline}      
+    
+Since $\frac{d}{dz}\Gamma(a,z) = -z^{a-1}e^-z$, the integral can be written as the product of an exponential and gamma functions:    
+
+\begin{multline}
+p_X(x|\alpha, \beta, \delta) = \frac{e^{-\frac{2x}{\beta}+\frac{x}{\delta}}}{\beta^\alpha\Gamma(\alpha)\delta} 
+  \left[
+    e^{x\left(\frac{2}{\beta}-\frac{2}{\delta}\right)}
+    \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^{-\alpha}\Gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)(2x-y)\right)
+  \right]_x^{2x} \\
+  = \frac{e^{-\frac{x}{\delta}}}{\beta^\alpha\Gamma(\alpha)\delta}
+  \left(\frac{\beta\delta}{\delta-\beta}\right)^\alpha  
+    \left[
+      \Gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)(2x-y)\right)
+    \right]_x^{2x} \\
+\end{multline}
+
+Simplifying constants and evaluating at $x$ and $2x$ results in the product of an exponential with a single normalize lower incomplete gamma function:
+
+\begin{multline}
+p_X(x|\alpha, \beta, \delta)  = \frac{\delta^{\alpha-1}}{(\delta-\beta)^\alpha}\frac{e^{-\frac{x}{\delta}}}{\Gamma(\alpha)} 
+    \left[
+      \Gamma\left(\alpha\right) - \Gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)x\right)
+    \right] \\ 
+  = \frac{\delta^{\alpha-1}}{(\delta-\beta)^\alpha} \left(e^{-\frac{x}{\delta}}\right) \frac{\gamma\left(\alpha,\left(\frac{1}{\beta}-\frac{1}{\delta}\right)x\right)}{\Gamma(\alpha)}
+\end{multline}
+
+The final result is: 
+
+\begin{equation}
+p_X(x|\alpha, \beta, \delta) 
+  = \frac{\delta^{\alpha-1}}{(\delta-\beta)^\alpha} \left(e^{-\frac{x}{\delta}}\right) \frac{\gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)x\right)}{\Gamma(\alpha)}
+\end{equation}
+
+The density integrates numerically to $1$.  It only makes sense if $\delta > \beta$, but delta is the scale for the exponential heavy tail whereas beta is the scale for the main mass of the density so it's a fine restriction to have.
+
+
+\subsubsection{Derivation of the Gamma-Exponential sum cumulative density.}
+
+For truncated models we need the CDF too.  
+
+\begin{multline}
+F_X(w|\alpha, \beta, \delta) = \int_0^w p_X(x|\alpha, \beta, \delta) = \int_0^w 
+  \frac{\delta^{\alpha-1}}{(\delta-\beta)^\alpha} \left(e^{-\frac{x}{\delta}}\right) 
+  \frac{\gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)x\right)}{\Gamma(\alpha)} \\
+  = \frac{\delta^{\alpha-1}}{(\delta-\beta)^\alpha\Gamma(\alpha)} \int_0^w
+    \left(e^{-\frac{x}{\delta}}\right) \gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)x\right) 
+\end{multline}    
+
+Mathematica suggests this atrocity which we simplify
+    
+\begin{multline}
+F_X(w|\alpha, \beta, \delta)  = \frac{\delta^{\alpha}}{(\delta-\beta)^\alpha\Gamma(\alpha)} \left[\right. \\
+     \left(
+       \beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha \Gamma(\alpha) 
+    \right) - \left(
+      \beta \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha w^{\alpha-1} e^{-\frac{w}{\beta}}
+    \right) - \left(
+      e^{-\frac{w}{\delta}}\Gamma(\alpha)
+    \right) \\ + \left(
+      \beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha \Gamma\left(\alpha-1, \frac{w}{\beta}\right)
+    \right) - \left(
+      \alpha \beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha \Gamma\left(\alpha-1, \frac{w}{\beta}\right)
+    \right) \\ + \left(
+      e^{-\frac{w}{\delta}} \Gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)w\right)
+    \right)
+  \left.\right] \\
+  = \frac{\delta^{\alpha}}{(\delta-\beta)^\alpha\Gamma(\alpha)} \left[\right. 
+     \left(
+       \beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha \Gamma(\alpha) 
+    \right) - \left(
+      \beta \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha w^{\alpha-1} e^{-\frac{w}{\beta}}
+    \right) \\ -
+      (\alpha-1)\left(\beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha \Gamma\left(\alpha-1, \frac{w}{\beta}\right)
+    \right) - \left(
+      e^{-\frac{w}{\delta}} \gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)w\right)
+    \right) 
+  \left.\right]
+\end{multline}
+
+Further simplification:
+
+\begin{multline}
+F_X(w| \alpha, \beta, \delta) = \frac{\delta^{\alpha}}{(\delta-\beta)^\alpha\Gamma(\alpha)} \left[\vphantom{\frac{1}{1}}\right. 
+     \left(
+       \beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha \Gamma(\alpha) 
+    \right) - \left(
+      \beta \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha w^{\alpha-1} e^{-\frac{w}{\beta}}
+    \right) \\ -
+      (\alpha-1)\left(\beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha \Gamma\left(\alpha-1, \frac{w}{\beta}\right)
+    \right) - \left(
+      e^{-\frac{w}{\delta}} \gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)w\right)
+    \right) 
+  \left.\vphantom{\frac{1}{1}}\right] \\
+  = \frac{\delta^{\alpha}}{(\delta-\beta)^\alpha\Gamma(\alpha)} \left[\vphantom{\frac{1}{1}}\right. 
+      \left(
+       \beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha  
+    \right)\left(\vphantom{\frac{1}{1}}\right.
+      \Gamma(\alpha) 
+    - \left(
+      \frac{1}{\beta^{\alpha-1}} w^{\alpha-1} e^{-\frac{w}{\beta}}
+    \right) \\ -
+      (\alpha-1)\Gamma\left(\alpha-1, \frac{w}{\beta}\right)
+    \left.\vphantom{\frac{1}{1}}\right) - \left(
+      e^{-\frac{w}{\delta}} \gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)w\right)
+    \right) 
+  \left.\vphantom{\frac{1}{1}}\right]  
+\end{multline}
+
+With the identity $\Gamma(\alpha,z) = (\alpha-1)\Gamma(\alpha-1,z) + z^{\alpha-1}e^{-z}$ we can rewrite $(\alpha-1)\Gamma(\alpha-1, \sfrac{w}{\beta})$ as
+$\Gamma(\alpha, \sfrac{w}{\beta}) - (\sfrac{w}{\beta})^{\alpha-1}e^{-\sfrac{w}{\beta}}$ and simplify:
+
+\begin{multline}
+F_X(w| \alpha, \beta, \delta) = \frac{\delta^{\alpha}}{(\delta-\beta)^\alpha\Gamma(\alpha)} \left[\vphantom{\frac{1}{1}}\right. 
+      \left(
+       \beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha  
+    \right)\left(\vphantom{\frac{1}{1}}\right.
+      \Gamma(\alpha) 
+    - \left(
+      \frac{1}{\beta^{\alpha-1}} w^{\alpha-1} e^{-\frac{w}{\beta}}
+    \right) \\ -
+      \Gamma\left(\alpha, \frac{w}{\beta}\right) + \left(\frac{w}{\beta}\right)^{\alpha-1}e^{-\frac{w}{\beta}}
+    \left.\vphantom{\frac{1}{1}}\right) - \left(
+      e^{-\frac{w}{\delta}} \gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)w\right)
+    \right) 
+  \left.\vphantom{\frac{1}{1}}\right] \\
+  = \frac{\delta^{\alpha}}{(\delta-\beta)^\alpha\Gamma(\alpha)} \left[\vphantom{\frac{1}{1}}\right. 
+      \left(
+       \beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha  
+    \right)\left(\vphantom{\frac{1}{1}}\right.
+    - \left(\frac{w}{\beta}\right)^{\alpha-1} e^{-\frac{w}{\beta}}
+    \\ -
+      \gamma\left(\alpha, \frac{w}{\beta}\right) + \left(\frac{w}{\beta}\right)^{\alpha-1}e^{-\frac{w}{\beta}}
+    \left.\vphantom{\frac{1}{1}}\right) - \left(
+      e^{-\frac{w}{\delta}} \gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)w\right)
+    \right) 
+  \left.\vphantom{\frac{1}{1}}\right] \\
+ = \frac{\delta^{\alpha}}{(\delta-\beta)^\alpha\Gamma(\alpha)} \left[\vphantom{\frac{1}{1}}\right. 
+       \beta^\alpha \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^\alpha  
+    \gamma\left(\alpha, \frac{w}{\beta}\right) 
+   -
+      e^{-\frac{w}{\delta}} \gamma\left(\alpha, \left(\frac{1}{\beta}-\frac{1}{\delta}\right)w\right)
+  \left.\vphantom{\frac{1}{1}}\right]  
+\end{multline}
+
+Finally we can merge the constant back into the rest of the expression:
+
+\begin{equation}
+F_X(w| \alpha, \beta, \delta) = \frac{\gamma\left(\alpha, \frac{w}{\beta}\right)}{\Gamma(\alpha)} - \left(\frac{1}{\beta}-\frac{1}{\delta}\right)^{-\alpha} \frac{e^{\frac{-w}{\delta}}}{\beta^\alpha} \frac{\gamma\left(\alpha,\left(\frac{1}{\beta}-\frac{1}{\delta}\right)w\right)}{\Gamma(\alpha)}
+\end{equation}
+
+
+
+\end{document}
+
+

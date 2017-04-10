@@ -1,0 +1,28 @@
+Package: waitup
+Title: Working with delay distributions
+Version: 0.0.0.9000
+Authors@R: person("Krzysztof", "Sakrejda", email = "krzysztof.sakrejda@gmail.com", role = c("aut", "cre"))
+Author: Krzysztof Sakrejda [aut, cre]
+Maintainer: Krzysztof Sakrejda <krzysztof.sakrejda@gmail.com>
+Description: The package wraps up delay distributions from various sources,
+    tests them against other available implementations, and documents them in a
+    consistent format.
+Depends:
+    R (>= 3.2.3),
+    flexsurv,
+    rstan,
+    readr,
+    rappdirs,
+    Rcpp
+Imports:
+    Rcpp, RcppEigen
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 5.0.1
+Suggests: knitr,
+    rmarkdown,
+    testthat
+VignetteBuilder: knitr
+BuildVignettes: yes
+LinkingTo: Rcpp, RcppEigen

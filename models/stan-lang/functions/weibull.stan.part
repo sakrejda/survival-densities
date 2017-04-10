@@ -1,0 +1,39 @@
+
+//// ---- weibull 
+//' Naive implementation of the Weibull density.
+//' @param x Value to evaluate density at.
+//' @param alpha Shape parameter.
+//' @param beta Scale parameter.
+real weibull_pdf_1S(real x, real alpha, real beta) {
+  real y;
+  real d;
+  y = x / beta;
+  d = alpha / beta * y^(alpha-1) * exp(-y^alpha);
+  return d;
+}
+
+//' @describeIn weibull_pdf_1S Naive implementation of the Weibull log-density.
+real weibull_lpdf_1S(real x, real alpha, real beta) {
+  real d;
+  d = log(alpha) - log(beta) +
+    (alpha-1) * (log(x) - log(beta)) +
+    -(x/beta)^alpha;
+  return d;
+}
+
+//' @describeIn weibull_pdf_1S Naive implementation of Weibull cumulative density.
+real weibull_cdf_1S(real x, real alpha, real beta) {
+  real d;
+  d = 1 - exp(-(x/beta)^(alpha));
+  return d;
+}
+
+
+//' @describeIn weibull_pdf_1S Naive implementation of Weibull log cumulative density.
+real weibull_lcdf_1S(real x, real alpha, real beta) {
+  real d;
+  d = log(weibull_cdf_1S(x, alpha, beta));
+  return d;
+}
+
+

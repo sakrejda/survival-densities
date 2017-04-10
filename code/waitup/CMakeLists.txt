@@ -1,0 +1,43 @@
+
+file (GLOB RPKG waitup/*)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/waitup
+  COMMAND export R_LIBS_USER=${R_LIB_DIR}
+  COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/waitup ${CMAKE_CURRENT_BINARY_DIR}
+  COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/waitup/inst/include
+  COMMAND cp -R ${PROJECT_BINARY_DIR}/code/stan-dev/stan ${CMAKE_CURRENT_BINARY_DIR}/waitup/inst/include/
+  DEPENDS ${RPKG} 
+  VERBATIM
+)
+
+add_custom_target(
+  waitup-dir ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/waitup stan-repo)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/waitup_${PROJECT_VERSION}.tar.gz
+  COMMAND export R_LIBS_USER=${R_LIB_DIR}
+  COMMAND Rscript -e "Rcpp:::compileAttributes(pkgdir='waitup')"
+  COMMAND R CMD build ${CMAKE_CURRENT_BINARY_DIR}/waitup
+  COMMAND R CMD INSTALL ${CMAKE_CURRENT_BINARY_DIR}/waitup_${PROJECT_VERSION}.tar.gz
+  COMMAND Rscript -e "devtools::document('waitup')"
+  COMMAND R CMD build ${CMAKE_CURRENT_BINARY_DIR}/waitup
+  COMMAND R CMD INSTALL ${CMAKE_CURRENT_BINARY_DIR}/waitup_${PROJECT_VERSION}.tar.gz
+  DEPENDS waitup-dir stan-functions-hpp 
+  VERBATIM)
+
+add_custom_target(
+  waitup-pkg ALL DEPENDS waitup-dir stan-functions-hpp 
+    ${CMAKE_CURRENT_BINARY_DIR}/waitup_${PROJECT_VERSION}.tar.gz)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/test-output.txt
+  COMMAND Rscript -e "sink(file='test-output.txt'); devtools::test('waitup'); sink()"
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/waitup_${PROJECT_VERSION}.tar.gz
+  VERBATIM)
+
+add_custom_target(
+  waitup-tests ALL DEPENDS 
+    waitup-pkg
+    ${CMAKE_CURRENT_BINARY_DIR}/test-output.txt)
+

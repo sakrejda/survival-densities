@@ -1,0 +1,47 @@
+
+parameters {
+  real alpha_0;
+  real beta_0;
+  real nu_0;
+}
+
+
+model {
+  alpha_0 ~ normal(0,sigma_log);
+  beta_0 ~ normal(0,sigma_log);
+  nu_0 ~ normal(0,sigma_log);  
+
+  {
+  vector[n_obs] alpha;
+  vector[n_obs] beta;
+  vector[n_obs] nu;
+  for ( i in 1:n_obs )
+    alpha[i] = kappa[1] * exp(alpha_0);
+  for ( i in 1:n_obs )
+    beta[i] = kappa[2] * exp(beta_0);  
+  for ( i in 1:n_obs )
+    nu[i] = kappa[3] * exp(nu_0);  
+
+  for ( i in 1:n_obs ) {
+    target += generalized_gamma_lpdf_1S(t_delta[i], alpha[i], beta[i], nu[i]);
+    if (t_truncate[i] != positive_infinity())
+      target += -generalized_gamma_lcdf_1S(t_truncate[i], alpha[i], beta[i], nu[i]);      
+  }
+  }
+}
+
+generated quantities {
+  real g_alpha;
+  real g_beta;
+  real g_nu;
+  g_alpha = kappa[1] * exp(alpha_0);
+  g_beta = kappa[2] * exp(beta_0);  
+  g_nu = kappa[3] * exp(nu_0);  
+}
+
+
+
+
+
+
+

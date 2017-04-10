@@ -1,0 +1,49 @@
+
+// ---- gamma-self-exp-mix
+
+// Naive implementation a density of the sum of a gamma with 
+// an independent exponential.  Provides for a gamma with an
+// independently scaled right tail.
+// @param x Value to evaluate density at.
+// @param alpha Shape parameter for gamma component.
+// @param beta Scale parameter for gamma component.
+// @param delta Scale parameter for exponential component.
+real gamma_exp_sum_pdf_1S(real x, real alpha, real beta, real delta) {
+  real d;
+  d = delta^(alpha-1) / (delta-beta)^alpha * exp(-x/delta) * 
+    gamma_p(alpha, (1/beta-1/delta)*x);
+  return d;
+}
+
+// @describeIn gamma_exp_sum_pdf_1S Naive implementation of the log
+// density of the sum of a gamma variable with an independent
+// exponential.
+real gamma_exp_sum_lpdf_1S(real x, real alpha, real beta, real delta) {
+  real d;
+  d = (alpha-1)*log(delta) - alpha*log(delta-beta) - x/delta +
+    log(gamma_p(alpha, (1/beta-1/delta)*x));
+  return d;
+}
+
+// @describeIn gamma_exp_sum_pdf_1S Naive implementation of the 
+// cumulative density of the sum of a gamma variable with an independent
+// exponential.
+real gamma_exp_sum_cdf_1S(real x, real alpha, real beta, real delta) {
+  real d;
+  d = gamma_p(alpha, x/beta) - (delta/(delta-beta))^alpha /
+    exp(x/delta) * gamma_p(alpha, (1/beta-1/delta)*x);
+  return(d);
+}
+
+
+// @describeIn gamma_pdf_1S Naive implementation of the Gamma log
+// cumulative density.
+real gamma_exp_sum_lcdf_1S(real x, real alpha, real beta, real delta) {
+  real d;
+  d = log(gamma_exp_sum_cdf_1S(x, alpha, beta, delta));
+  return(d);
+}
+
+
+
+

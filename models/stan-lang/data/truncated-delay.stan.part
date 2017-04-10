@@ -1,0 +1,26 @@
+data {
+  int n_obs;
+  vector[n_obs] t_start;
+  vector[n_obs] t_stop;
+  vector[n_obs] t_truncate;
+ 
+  int n_parameters;
+  vector<lower=0>[n_parameters] kappa;
+  real<lower=0> sigma_log;       // default is 1/2
+  real<lower=0> sigma_identity;  // default is 1
+  real<lower=0> sigma_logit;     // default is 3/2
+}
+
+transformed data {
+  vector<lower=0>[n_obs] t_delta;
+  real<lower=0> t_max;
+  t_delta = t_stop-t_start;
+  t_max = max(t_delta) + machine_precision();
+  for ( i in 1:n_obs )
+    if (t_start[i] >= t_stop[i])
+      reject("t_stop must come after t_start. Index: ", i);
+  for ( i in 1:n_obs )
+    if (t_stop[i] >= t_truncate[i])
+      reject("t_truncate must come after t_stop. Index: ", i);
+}
+

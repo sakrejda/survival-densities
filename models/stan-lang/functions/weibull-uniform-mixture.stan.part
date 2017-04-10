@@ -1,0 +1,58 @@
+
+//// ---- weibull_uniform_mixture 
+
+//' Naive implementation of the Weibull-uniform mixture density.
+//' @param x Value to evaluate density at.
+//' @param max Maximum value x could take.
+//' @param q Mixing parameter.
+//' @param alpha Shape parameter.
+//' @param beta Scale parameter.
+real weibull_uniform_mixture_pdf_1S(real x, real max, real q, real alpha, real beta) {
+  real dw;
+  real du;
+  real d;
+  dw = weibull_pdf_1S(x, alpha, beta)/weibull_cdf_1S(max, alpha, beta);
+  du = 1/max;
+  d = (1-q)*dw + q*du;
+  return d;
+}
+
+
+//' @describeIn weibull_uniform_mixture_pdf_1S Naive implementation of the Weibull-uniform mixture log density.
+real weibull_uniform_mixture_lpdf_1S(real x, real max, real q, real alpha, real beta) {
+  real dw;
+  real du;
+  real d;
+  dw = weibull_lpdf_1S(x, alpha, beta) - weibull_lcdf_1S(max, alpha, beta);
+  du = -log(max);
+  d = log_sum_exp(log(1-q)+dw, log(q)+du);
+  return d;
+}
+
+
+//' @describeIn weibull_uniform_mixture_pdf_1S Naive implementation of the
+//' Weibull-uniform mixture cumulative density.
+real weibull_uniform_mixture_cdf_1S(real x, real max, real q, real alpha, real beta) {
+  real dw;
+  real du;
+  real d;
+  dw = weibull_cdf_1S(x, alpha, beta)/weibull_cdf_1S(max, alpha, beta);
+  du = x/max;
+  d = (1-q)*dw + q*du;
+  return d;
+}
+
+//' @describeIn weibull_uniform_mixture_pdf_1S Naive implementation of the
+//' Weibull-uniform mixture log cumulative density.
+real weibull_uniform_mixture_lcdf_1S(real x, real max, real q, real alpha, real beta) {
+  real dw;
+  real d;
+  dw = weibull_lcdf_1S(x, alpha, beta) - weibull_lcdf_1S(max, alpha, beta);
+  d = log_sum_exp(log(1-q)+dw, log(q)- log(max) + log(x));
+  return d;
+}
+
+
+
+
+

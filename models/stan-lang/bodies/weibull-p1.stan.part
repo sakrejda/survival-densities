@@ -1,0 +1,29 @@
+
+parameters {
+  real alpha_0;
+  real beta_0;
+}
+
+model {
+  alpha_0 ~ normal(0,sigma_log);
+  beta_0 ~ normal(0,sigma_log);
+
+  {
+  vector[n_obs] alpha;
+  vector[n_obs] beta;
+  for ( i in 1:n_obs ) 
+    alpha[i] = kappa[1] * exp(alpha_0);
+  for ( i in 1:n_obs ) 
+    beta[i] = kappa[2] * exp(beta_0);  
+  
+  for ( i in 1:n_obs ) {
+    target += weibull_lpdf_1S(t_delta[i], alpha[i], beta[i]);
+    if (t_truncate[i] != positive_infinity())
+      target += -weibull_lcdf_1S(t_truncate[i], alpha[i], beta[i]);
+  }
+  }
+}
+
+
+
+

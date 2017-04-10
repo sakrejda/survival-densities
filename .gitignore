@@ -1,0 +1,8 @@
+*.swp
+*.Rproj
+*.swo
+*.bk
+*.rds
+*.rda
+*~
+*.Rcheck

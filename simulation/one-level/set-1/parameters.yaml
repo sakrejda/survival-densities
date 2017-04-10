@@ -1,0 +1,14 @@
+
+parameters : {
+  "N" : [10, 1000],
+  alpha : [1.5, 2],
+  beta : [2, 10],
+  nu : [1.5, 2] 
+}
+
+replicates : {
+  size : 2
+}
+
+
+

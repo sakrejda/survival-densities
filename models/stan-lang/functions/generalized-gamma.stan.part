@@ -1,0 +1,96 @@
+
+//// ---- standard_generalized_gamma 
+
+//' Naive implementation of the generalized Gamma density.
+//' @param x Value to evaluate density at.
+//' @param alpha Shape parameter.
+//' @param beta Scale parameter.
+//' @param nu Tail parameter.
+real generalized_gamma_pdf_1S(real x, real alpha, real beta, real nu) {
+  real d;
+  d = nu/(beta*tgamma(alpha/nu)) *
+    (x/beta)^(alpha-1) * exp(-(x/beta)^nu);
+  return d;
+}
+
+
+//' @describeIn generalized_gamma_pdf_1S Naive implementation of the
+//' generalized Gamma log density.
+real generalized_gamma_lpdf_1S(real x, real alpha, real beta, real nu) {
+  real d;
+  d = log(nu) - log(beta) - lgamma(alpha/nu) +
+    (alpha-1)*(log(x) - log(beta)) - (x/beta)^nu;
+  return d;
+}
+
+
+//' @describeIn generalized_gamma_pdf_1S Naive implementation of the
+//' generalized Gamma cumulative density.
+real generalized_gamma_cdf_1S(real x, real alpha, real beta, real nu) {
+  real d;
+  d = gamma_p(alpha/nu, (x/beta)^nu);
+  return d;
+}
+
+
+//' @describeIn generalized_gamma_pdf_1S Naive implementation of the
+//' generalized Gamma log cumulative density.
+real generalized_gamma_lcdf_1S(real x, real alpha, real beta, real nu) {
+  real d;
+  d = log(generalized_gamma_cdf_1S(x, alpha, beta, nu));
+  return d;
+}
+
+
+//// ---- lawless_generalized_gamma
+
+//' Implementation of the generalized Gamma density from Lawless (1992)
+//' @param x Value to evaluate density at.
+//' @param k Shape parameter.
+//' @param mu Location parameter.
+//' @param sigma Scale parameter.
+real generalized_gamma_pdf_2S(real x, real k, real mu, real sigma) {
+  real w;
+  real d;
+  w = (log(x)-mu)/sigma;
+  d = (k^(k-.5))/sigma/tgamma(k) * exp(
+    sqrt(k)*w - k*exp(k^(-.5)*w)
+  )/x;
+  return d;
+}
+
+//' @describeIn generalized_gamma_pdf_2S Implementation of the generalized
+//' Gamma log density from Lawless (1992)
+real generalized_gamma_lpdf_2S(real x, real k, real mu, real sigma) {
+  real y;
+  real w;
+  real d;
+  y = log(x);
+  w = (y-mu)/sigma;
+  d = (k-.5)*log(k) - log(sigma) - lgamma(k) +
+    (sqrt(k)*w - k*exp(1/sqrt(k)*w)) - y;
+  return d;
+}
+
+
+//' @describeIn generalized_gamma_pdf_2S Implementation of the generalized
+//' Gamma cumulative density from Lawless (1992)
+real generalized_gamma_cdf_2S(real x, real k, real mu, real sigma) {
+  real w;
+  real d;
+  w = (log(x) - mu)/sigma;
+  d = gamma_p(k, k*exp(1/sqrt(k)*w));
+  return d;
+}
+
+//' @describeIn generalized_gamma_pdf_2S Implementation of the generalized
+//' Gamma cumulative log density from Lawless (1992)
+real generalized_gamma_lcdf_2S(real x, real k, real mu, real sigma) {
+  real w;
+  real d;
+  w = (log(x) - mu)/sigma;
+  d = log(gamma_p(k, k*exp(1/sqrt(k)*w)));
+  return d;
+}
+
+
