@@ -1,6 +1,5 @@
 .libPaths("R/library")
 options(repos=c(CRAN="https://cran.rstudio.com"))
-#install.packages("packrat")
 install.packages("drat")
 
 args <- commandArgs(trailingOnly=TRUE)
@@ -19,11 +18,6 @@ for (pkg in pkgs) {
     warning(paste0("Package ", pkg, " failed to load.")) 
 }
 
-if (args[2] == 'update')
+if (length(args) > 1 && args[2] == 'update')
   update.packages(ask=FALSE, checkBuilt=FALSE)
-#install.packages('rgdal', type = "source", configure.args=c('--with-proj-include=/usr/local/include','--with-proj-lib=/usr/local/lib'))
-#packrat::set_opts(ignored.packages = c("waitup"))
-#packrat::init()
-#packrat::snapshot()
-
 

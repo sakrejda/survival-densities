@@ -1,29 +1,20 @@
-abind
-roxygen2
-testthat
-devtools
 drat
-DBI
-knitr
-magrittr
-Matrix
-mvtnorm
-dplyr
-R6
+devtools
+abind
+digest
+testthat
+roxygen2
 Rcpp
 RcppEigen
-reshape2
-RPostgreSQL
-shinyjs
-stringr
-tibble
-tools
-yaml
+magrittr
+dplyr
 ggplot2
+rappdirs
 flexsurv
 rstan
-readr
-rappdirs
+yaml
+
+
 
 
 
