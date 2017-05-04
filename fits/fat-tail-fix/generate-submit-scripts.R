@@ -81,7 +81,7 @@ stan_args <- function(chain_id, files) {
 }
 
 models_dir <- file.path("..", "..", "models",
-  "stan-lang", "full")
+  "stan-lang", "full-fix")
 
 models <- c(
   gamma = "gamma-p1",

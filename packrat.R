@@ -1,4 +1,4 @@
-
+.libPaths("R/library")
 options(repos=c(CRAN="https://cran.rstudio.com"))
 #install.packages("packrat")
 install.packages("drat")
