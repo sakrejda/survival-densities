@@ -6,9 +6,10 @@ set(CMDSTAN_FIX_DIR ${PROJECT_BINARY_DIR}/code/stan-dev/bugfix-cmdstan)
 set(SIMULATION_DIR ${PROJECT_BINARY_DIR}/simulation)
 set(FIT_DIR ${PROJECT_BINARY_DIR}/fit)
 set(STAN_MODEL_DIR ${PROJECT_BINARY_DIR}/models/stan-lang/full)
-set(R_LIB_DIR ${PROJECT_BINARY_DIR}/R/library)
+set(STAN_MODEL_FIX_DIR ${PROJECT_BINARY_DIR}/models/stan-lang/full)
 #set(ENV{CC} /share/pkg/gcc/5.1.0/bin/gcc)
 #set(ENV{CXX} /share/pkg/gcc/5.1.0/bin/g++)
+set(R_LIB_DIR ${PROJECT_BINARY_DIR}/R/library)
 set(ENV{R_LIBS_USER} ${R_LIB_DIR})
 
 add_custom_command(
