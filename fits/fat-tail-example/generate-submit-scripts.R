@@ -125,13 +125,19 @@ for (r in 1:n_runs) {
   )
   if (is.null(model_inits[[ run_data[i, 'run_names'] ]])) 
     files[['init']] <- NULL
-  binary <- paste0("  cd $PBS_O_WORKDIR \n", model_binaries[ run_data[i, 'model'] ] )
+  binary <- paste0(model_binaries[ run_data[i, 'model'] ] )
   args <- stan_args(chain_label, files)
   pbs_file <- paste0(run_data[i, 'run_names'], '-id-', chain_label, '-job.pbs')
   pbs_args <- list(
-    N=paste0(run_data[i, 'run_names'], '-id-', chain_label, '-job-tag')
+    J=paste0(run_data[i, 'run_names'], '-id-', chain_label, '-job-tag'),
+    oo=paste0(run_data[i, 'run_names'], '-id-', chain_label, '-terminal-output.txt'),
+    eo=paste0(run_data[i, 'run_names'], '-id-', chain_label, '-terminal-errors.txt'),
+    W=paste0("00:30"),
+    q=paste0("condo_uma_nicholas_reich"),
+    R=paste("rusage[mem=4096]")
   )
-  write_cmdstan_pbs(binary, args, pbs_args, pbs_prefix, pbs_file)
+
+  write_cmdstan_pbs(binary, args, pbs_args, prefix=bsub_prefix, pbs_file)
 
   my_rdump(data_data, file=run_data[i, 'data_files'])
   if (!is.null(model_inits[[ run_data[i, 'run_names'] ]] ))

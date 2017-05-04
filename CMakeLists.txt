@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 3.5)
 project (delay-analysis-method VERSION 0.0.0.9000)
 
 set(CMDSTAN_DIR ${PROJECT_BINARY_DIR}/code/stan-dev/cmdstan)
+set(CMDSTAN_FIX_DIR ${PROJECT_BINARY_DIR}/code/stan-dev/bugfix-cmdstan)
 set(SIMULATION_DIR ${PROJECT_BINARY_DIR}/simulation)
 set(FIT_DIR ${PROJECT_BINARY_DIR}/fit)
 set(STAN_MODEL_DIR ${PROJECT_BINARY_DIR}/models/stan-lang/full)
