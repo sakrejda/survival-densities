@@ -25,9 +25,9 @@ add_custom_target(
 add_custom_command(
   OUTPUT packrat
   COMMAND mkdir -p ${R_LIB_DIR}
-  COMMAND Rscript ${PROJECT_SOURCE_DIR}/packrat.R ${PROJECT_SOURCE_DIR} noupdate
+  COMMAND Rscript ${PROJECT_SOURCE_DIR}/packages.R ${PROJECT_SOURCE_DIR} noupdate
   VERBATIM
-  DEPENDS packrat.R R-libraries.txt simachine-build
+  DEPENDS packages.R R-libraries.txt simachine-build
 )
 
 add_custom_target(
