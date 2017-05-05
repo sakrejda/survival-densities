@@ -6,9 +6,22 @@ my_rdump <- function(x, file) {
 
 library(rstan); library(dplyr); library(magrittr)
 
+pad <- function(x, n) {
+  nc <- nchar(as.character(x))
+  if ((n-nc) < 0)
+    n <- nc
+  pads <- rep('0', n-nc) %>% paste(collapse='')
+  if ((n-nc) > 0) 
+    x <- paste0(pads, x, collapse='', sep='')
+  return(x)
+}
+
 delays <- readRDS("delay-data.rds")
 N_clean <- length(delays[['clean']])
 N_contaminated <- length(delays[['contaminated']])
+
+n_chains <- 10
+chains <- 1:n_chains
 
 data <- list(
   gamma = list(
@@ -19,6 +32,15 @@ data <- list(
     n_obs=N_contaminated,
     t_start=rep(0, N_contaminated), t_stop=delays[['contaminated']], t_truncate=rep(Inf, N_contaminated)
   )
+)
+data_names <- names(data)
+
+model_names <- c(
+  "gamma-p1",
+  "generalized-gamma-p1",
+  "generalized-gamma-p2",
+  "gamma-exp-sum-gamma-mix-p1",
+  "gamma-exp-sum-gamma-mix-p2"
 )
 
 model_data <- list(
@@ -36,32 +58,32 @@ model_data <- list(
   )
 )
 
-model_inits <- list(
-  gamma_on_gamma = NULL,
-  gamma_on_gesgm = NULL,
-  generalized_gamma_on_gamma = NULL,
-  generalized_gamma_on_gesgm = NULL,
-  gesgm_on_gamma = list(
-    mu_0 = sqrt(3), sigma_0=sqrt(sqrt(3)), q_0=-5, delta_0=0
-  ),
-  gesgm_on_gesgm = list(
-    mu_0 =log(sqrt(3)*sqrt(3)), sigma_0=log(sqrt(3)), q_0=-1, delta_0=log(5/1)-3
-  )
-)
+models_dir <- file.path("..", "..", "models",
+  "stan-lang", "full")
+models_dir_fix <- file.path("..", "..", "models",
+  "stan-lang", "full-fix")
+binary_dir <- c(models_dir, models_dir_fix)
 
-data_names <- names(data)
-model_data_names <- names(model_data) 
+run_data <- expand.grid(chain=chains, model=model_names, binary_dir=binary_dir, data=data_names) 
 
-run_data <- expand.grid(model=model_data_names, data=data_names) 
-run_names <- run_data %>% as.matrix %>% apply(1, paste, collapse='_on_') %>%
-  gsub(pattern='_', x=., replacement='-')
-run_data <- cbind(run_data, run_names) %>% data.frame(check.names=FALSE) %>%
-  mutate(data_files = paste0(run_names, "-data.rdump")) %>%
-  mutate(init_files = paste0(run_names, "-init.rdump")) %>%
-  mutate(output_files = paste0(run_names, "-X-output.csv")) %>%
-  mutate(diagnostic_files = paste0(run_names, "-X-diagnostic.csv")) 
+run_data <- run_data %>% mutate(
+  job_id = 1:n(),
+  job_label = sapply(job_id, pad, n=nchar(n())),
+  chain_label = sapply(chain, pad, n=nchar(n_chains)),
+  model_type = gsub(pattern='-p[0-9]', x=model, replacement=''),
+  binary_type = ifelse(grepl(pattern='full-fix', x=binary_dir), 'fix', 'dev'),
+  model_binary = paste0(binary_dir, model),
+  model_progam = paste0(binary_dir, model, '.stan'),
+  run_name = paste0(model, '_on_', data, '_with_', binary_type, '_chain_', chain_label, '_job_', job_label) %>% 
+    gsub(pattern='_', x=., replacement='-'),
+  data_file = paste0(model, '-on-', data, "-data.rdump"),
+  init_file = paste0(model, '-on-', data, "-init.rdump"),
+  output_file = paste0(run_name, "-output.csv"),
+  diagnostic_file = paste0(run_name, "-diagnostic.csv")
+) 
 
 saveRDS(run_data, file='run-data.rds')
+
 
 stan_args <- function(chain_id, files) {
   o <- paste0(
@@ -80,58 +102,27 @@ stan_args <- function(chain_id, files) {
   return(o)
 }
 
-models_dir <- file.path("..", "..", "models",
-  "stan-lang", "full")
 
-models <- c(
-  gamma = "gamma-p1",
-  generalized_gamma = "generalized-gamma-p1",
-  gesgm = "gamma-exp-sum-gamma-mix-p2"
-)
-
-model_binaries <- file.path(models_dir, models) %>% `names<-`(names(models))
-model_programs <- paste(model_binaries, 'stan', sep='.')
-
-saveRDS(model_binaries, 'model-binary-files.rds')
-saveRDS(model_programs, 'model-program-files.rds')
+saveRDS(run_data[['model_binary']], 'model-binary-files.rds')
+saveRDS(run_data[['model_program']], 'model-program-files.rds')
 
 
-n_chains <- 10
-n_run_types <- nrow(run_data)
-n_runs <- n_run_types*n_chains
-
-pad <- function(x, n) {
-  nc <- nchar(as.character(x))
-  if ((n-nc) < 0)
-    n <- nc
-  pads <- rep('0', n-nc) %>% paste(collapse='')
-  if ((n-nc) > 0) 
-    x <- paste0(pads, x, collapse='', sep='')
-  return(x)
-}
-
-width <- nchar(as.character(n_runs))
-for (r in 1:n_runs) {
-  chain_id <- r
-  chain_label <- pad(chain_id, width)
-  i <- ((r-1) %% n_run_types) + 1
-  binary <- model_binaries[[ run_data[i,'model'] ]] 
-  data_data <- c(data[[ run_data[i, 'data'] ]], model_data[[ run_data[i, 'model']]])
+for (i in 1:nrow(run_data)) {
+  chain_label <- run_data[i, 'chain_label']
+  binary <- run_data[i,'model_binary'] 
+  data_data <- c(data[[ run_data[i, 'data'] ]], model_data[[ run_data[i, 'model_type']]])
   files <- list(
-    data = run_data[i, 'data_files'],
-    init = run_data[i, 'init_files'],
-    output = gsub(pattern='-X-', x=run_data[i, 'output_files'], replacement=paste0('-',chain_label, '-')),
-    diagnostic = gsub(pattern='-X-', x=run_data[i, 'diagnostic_files'], replacement=paste0('-',chain_label, '-'))
+    data = run_data[i, 'data_file'],
+    init = NULL,  ## We don't want to require inits.
+    output = run_data[i, 'output_file'],
+    diagnostic = run_data[i, 'diagnostic_file'] 
   )
-  if (is.null(model_inits[[ run_data[i, 'run_names'] ]])) 
-    files[['init']] <- NULL
-  binary <- paste0(model_binaries[ run_data[i, 'model'] ] )
   args <- stan_args(chain_label, files)
-  pbs_file <- paste0(run_data[i, 'run_names'], '-id-', chain_label, '-job.pbs')
+  pbs_file <- paste0(run_data[i, 'run_name'], '-job-tag.pbs')
   pbs_args <- list(
-    J=paste0(run_data[i, 'run_names'], '-id-', chain_label, '-job-tag'),
-    oo=paste0(run_data[i, 'run_names'], '-id-', chain_label, '-terminal-output.txt'),
-    eo=paste0(run_data[i, 'run_names'], '-id-', chain_label, '-terminal-errors.txt'),
+    J=paste0(run_data[i, 'run_name'], '-job-tag'),
+    oo=paste0(run_data[i, 'run_name'], '-terminal-output.txt'),
+    eo=paste0(run_data[i, 'run_name'], '-terminal-errors.txt'),
     W=paste0("00:30"),
     q=paste0("condo_uma_nicholas_reich"),
     R=paste("usage[mem=4096]")
@@ -139,9 +130,7 @@ for (r in 1:n_runs) {
 
   write_cmdstan_pbs(binary, args, pbs_args, prefix=bsub_prefix, pbs_file)
 
-  my_rdump(data_data, file=run_data[i, 'data_files'])
-  if (!is.null(model_inits[[ run_data[i, 'run_names'] ]] ))
-    my_rdump(model_inits[[ run_data[i, 'run_names'] ]], file=run_data[i, 'init_files'])
+  my_rdump(data_data, file=run_data[i, 'data_file'])
 }
 
 

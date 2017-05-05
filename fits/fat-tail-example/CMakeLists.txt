@@ -43,78 +43,11 @@ add_custom_target(
   model-inits-clean-contaminated ALL DEPENDS gesgm-on-gamma-inits.rdump gesgm-on-gesgm-inits.rdump
 )
 
-set(FIND_ARGUMENTS
-  ". -name \"\*-job.pbs\" -exec qsub {} \\$<SEMICOLON>"
-)
+find_program(SCHEDULER bsub)
 
-separate_arguments(FIND_ARGUMENTS)
-
-# FIXME: Depend on output of qsub-based runs!
-add_custom_command(
-  OUTPUT model-binary-files.rds model-program-files.rds
-  COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job.pbs
-  COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/generate-submit-scripts.R
-  COMMAND find ${FIND_ARGUMENTS}
-  DEPENDS delay-data.rds stannis-build
-)
-
-add_custom_target(
-  fat-example-model-runs ALL DEPENDS model-binary-files.rds 
-    model-program-files.rds delay-data.rds
-)
-
-add_custom_command(
-  OUTPUT model-quantiles.rds
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/calculate-model-quantiles.R')"
-  DEPENDS fat-example-model-runs
-  VERBATIM
-)
-
-add_custom_target(
-  fat-model-quantiles ALL DEPENDS model-quantiles.rds calculate-model-quantiles.R
-)
-
-add_custom_command(
-  OUTPUT qq-plots.rds
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/generate-qq-plots.R')"
-  DEPENDS model-quantiles.rds
-  VERBATIM
-)
-
-add_custom_target(
-  fat-qq-plots ALL DEPENDS qq-plots.rds)
-
-add_custom_command(
-  OUTPUT parameter-estimates.rds
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/calculate-parameter-estimates.R')"
-  VERBATIM
-  DEPENDS fat-example-model-runs
-)
-
-add_custom_target(
-  fat-parameter-estimates ALL DEPENDS parameter-estimates.rds calculate-parameter-estimates.R
-)
-
-
-add_custom_command(
-  OUTPUT model-densities.rds
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/calculate-model-densities.R')"
-  VERBATIM
-  DEPENDS fat-example-model-runs
-)
-
-add_custom_target(
-  fat-model-densities ALL DEPENDS model-densities.rds calculate-model-densities.R
-)
-
-add_custom_command(
-  OUTPUT histogram-plots.rds
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/generate-histogram-plots.R')"
-  VERBATIM
-  DEPENDS model-densities.rds
-)
-
-add_custom_target(
-  fat-histogram-plots ALL DEPENDS histogram-plots.rds)
-
+if (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
+  set(FIND_ARGUMENTS ". -name \"\*-job.pbs\" -exec bsub < {} \\$<SEMICOLON>")
+else (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
+  set(FIND_ARGUMENTS ". -name \"\*-job.pbs\" -exec Rscript run.R {} \\$<SEMICOLON>")
+endif (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
 

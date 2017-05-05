@@ -6,7 +6,7 @@ add_custom_command(
 )
 
 add_custom_target(
-  fix-delay-data ALL DEPENDS delay-data.rds good-data-feelings-data.R
+  delay-data ALL DEPENDS delay-data.rds good-data-feelings-data.R
 )
 
 add_custom_command(
@@ -16,7 +16,7 @@ add_custom_command(
 )
 
 add_custom_target(
-  fix-data-quantiles ALL DEPENDS data-quantiles.rds calculate-data-quantiles.R
+  data-quantiles ALL DEPENDS data-quantiles.rds calculate-data-quantiles.R
 )
 
 
@@ -28,7 +28,7 @@ add_custom_command(
 )
 
 add_custom_target(
-  fix-model-data-clean-contaminated ALL DEPENDS delay-data gamma-on-gamma-data.rdump gamma-on-gesgm-data.rdump generalized-gamma-on-gamma-data.rdump 
+  model-data-clean-contaminated ALL DEPENDS delay-data gamma-on-gamma-data.rdump gamma-on-gesgm-data.rdump generalized-gamma-on-gamma-data.rdump 
     generalized-gamma-on-gesgm-data.rdump gesgm-on-gamma-data.rdump gesgm-on-gesgm-data.rdump prep-model-data.R
 )
 
@@ -40,9 +40,8 @@ add_custom_command(
 )
 
 add_custom_target(
-  fix-model-inits-clean-contaminated ALL DEPENDS gesgm-on-gamma-inits.rdump gesgm-on-gesgm-inits.rdump
+  model-inits-clean-contaminated ALL DEPENDS gesgm-on-gamma-inits.rdump gesgm-on-gesgm-inits.rdump
 )
-
 
 find_program(SCHEDULER bsub)
 
@@ -61,21 +60,20 @@ add_custom_command(
   DEPENDS delay-data.rds stannis-build
 )
 
-
 add_custom_target(
-  fix-fat-example-model-runs ALL DEPENDS model-binary-files.rds 
+  fat-example-model-runs ALL DEPENDS model-binary-files.rds 
     model-program-files.rds delay-data.rds
 )
 
 add_custom_command(
   OUTPUT model-quantiles.rds
   COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/calculate-model-quantiles.R')"
-  DEPENDS fits-fat-example-model-runs
+  DEPENDS fat-example-model-runs
   VERBATIM
 )
 
 add_custom_target(
-  fix-fat-model-quantiles ALL DEPENDS model-quantiles.rds calculate-model-quantiles.R
+  fat-model-quantiles ALL DEPENDS model-quantiles.rds calculate-model-quantiles.R
 )
 
 add_custom_command(
@@ -86,17 +84,17 @@ add_custom_command(
 )
 
 add_custom_target(
-  fix-fat-qq-plots ALL DEPENDS qq-plots.rds)
+  fat-qq-plots ALL DEPENDS qq-plots.rds)
 
 add_custom_command(
   OUTPUT parameter-estimates.rds
   COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/calculate-parameter-estimates.R')"
   VERBATIM
-  DEPENDS fix-fat-example-model-runs
+  DEPENDS fat-example-model-runs
 )
 
 add_custom_target(
-  fix-fat-parameter-estimates ALL DEPENDS parameter-estimates.rds calculate-parameter-estimates.R
+  fat-parameter-estimates ALL DEPENDS parameter-estimates.rds calculate-parameter-estimates.R
 )
 
 
@@ -108,7 +106,7 @@ add_custom_command(
 )
 
 add_custom_target(
-  fix-fat-model-densities ALL DEPENDS model-densities.rds calculate-model-densities.R
+  fat-model-densities ALL DEPENDS model-densities.rds calculate-model-densities.R
 )
 
 add_custom_command(
@@ -119,6 +117,6 @@ add_custom_command(
 )
 
 add_custom_target(
-  fix-fat-histogram-plots ALL DEPENDS histogram-plots.rds)
+  fat-histogram-plots ALL DEPENDS histogram-plots.rds)
 
 

@@ -23,7 +23,7 @@ add_custom_target(
 )
 
 add_custom_command(
-  OUTPUT packrat
+  OUTPUT R
   COMMAND mkdir -p ${R_LIB_DIR}
   COMMAND Rscript ${PROJECT_SOURCE_DIR}/packages.R ${PROJECT_SOURCE_DIR} noupdate
   VERBATIM
@@ -31,7 +31,7 @@ add_custom_command(
 )
 
 add_custom_target(
-  r-environment ALL DEPENDS packrat
+  r-environment ALL DEPENDS R
 )
 
 add_subdirectory(code)
