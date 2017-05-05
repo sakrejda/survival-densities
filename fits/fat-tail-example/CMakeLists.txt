@@ -47,7 +47,25 @@ find_program(SCHEDULER bsub)
 
 if (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
   set(FIND_ARGUMENTS ". -name \"\*-job.pbs\" -exec bsub < {} \\$<SEMICOLON>")
+  separate_arguments(FIND_ARGUMENTS)
+  add_custom_command(
+    OUTPUT model-binary-files.rds model-program-files.rds
+    COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job.pbs
+    COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/generate-submit-scripts.R
+    COMMAND find ${FIND_ARGUMENTS}
+    DEPENDS delay-data.rds stannis-build
+  )
 else (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
-  set(FIND_ARGUMENTS ". -name \"\*-job.pbs\" -exec Rscript run.R {} \\$<SEMICOLON>")
+  set(FIND_ARGUMENTS ". -name \"\*-job.pbs\" > job-files.txt")
+  separate_arguments(FIND_ARGUMENTS)
+  add_custom_command(
+    OUTPUT model-binary-files.rds model-program-files.rds
+    COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job.pbs
+    COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/generate-submit-scripts.R
+    COMMAND find ${FIND_ARGUMENTS}
+    COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/run.R job-files.txt
+    DEPENDS delay-data.rds stannis-build
+  )
 endif (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
+
 
