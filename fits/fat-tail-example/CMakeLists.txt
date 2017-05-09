@@ -56,16 +56,21 @@ if (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
     DEPENDS delay-data.rds stannis-build
   )
 else (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
-  set(FIND_ARGUMENTS ". -name \"\*-job.pbs\" > job-files.txt")
-  separate_arguments(FIND_ARGUMENTS)
+  set(FIND_ARGUMENTS_1 ". -name \"\*-job-tag.pbs\" -exec chmod 755 {} \\$<SEMICOLON>")
+  set(FIND_ARGUMENTS_2 ". -name \"\*-job-tag.pbs\" > job-files.txt")
+  separate_arguments(FIND_ARGUMENTS_1)
+  separate_arguments(FIND_ARGUMENTS_2)
   add_custom_command(
     OUTPUT model-binary-files.rds model-program-files.rds
-    COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job.pbs
+    COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job-tag.pbs
     COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/generate-submit-scripts.R
-    COMMAND find ${FIND_ARGUMENTS}
-    COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/run.R job-files.txt
+    COMMAND find ${FIND_ARGUMENTS_1}
+    COMMAND find ${FIND_ARGUMENTS_2}
+    COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/run.R job-files.txt ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS delay-data.rds stannis-build
   )
 endif (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
 
+add_custom_target(
+  fat-tail-example-model-runs ALL DEPENDS model-binary-files.rds model-program-files.rds)
 

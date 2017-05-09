@@ -52,7 +52,7 @@ model_data <- list(
     kappa=rep(1,3), n_parameters=3, 
     sigma_log=1/2, sigma_identity=1, sigma_logit=2/3
   ),
-  gesgm = list(
+  gamma_exp_sum_gamma_mix = list(
     kappa=c(10^-1, 10^-1, 1, .2, 1, 1, 1, 1), n_parameters=8, 
     sigma_log=1/2, sigma_identity=1, sigma_logit=2/3
   )
@@ -72,8 +72,8 @@ run_data <- run_data %>% mutate(
   chain_label = sapply(chain, pad, n=nchar(n_chains)),
   model_type = gsub(pattern='-p[0-9]', x=model, replacement=''),
   binary_type = ifelse(grepl(pattern='full-fix', x=binary_dir), 'fix', 'dev'),
-  model_binary = paste0(binary_dir, model),
-  model_progam = paste0(binary_dir, model, '.stan'),
+  model_binary = file.path(binary_dir, model),
+  model_progam = paste0(model_binary, '.stan'),
   run_name = paste0(model, '_on_', data, '_with_', binary_type, '_chain_', chain_label, '_job_', job_label) %>% 
     gsub(pattern='_', x=., replacement='-'),
   data_file = paste0(model, '-on-', data, "-data.rdump"),
@@ -110,7 +110,7 @@ saveRDS(run_data[['model_program']], 'model-program-files.rds')
 for (i in 1:nrow(run_data)) {
   chain_label <- run_data[i, 'chain_label']
   binary <- run_data[i,'model_binary'] 
-  data_data <- c(data[[ run_data[i, 'data'] ]], model_data[[ run_data[i, 'model_type']]])
+  data_data <- c(data[[ run_data[i, 'data'] ]], model_data[[ gsub(pattern='-', replacement='_', x=run_data[i, 'model_type'])]])
   files <- list(
     data = run_data[i, 'data_file'],
     init = NULL,  ## We don't want to require inits.
