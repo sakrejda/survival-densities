@@ -1,6 +1,7 @@
 drat
 devtools
 abind
+readr
 digest
 testthat
 roxygen2
