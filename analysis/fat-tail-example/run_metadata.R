@@ -14,19 +14,21 @@ run_data <- dplyr::mutate(run_data,
   sampling_n_leapfrog_sd = NULL,
   single_chain_r_hat_mean = NULL,
   single_chain_r_hat_sd = NULL,
-  total_time = 30*60
+  total_time = NA
 )
+
+all_estimates <- NULL
 
 for (i in 1:n_runs) {
   output_file <- file.path(output_path, run_data[i, 'output_file'])
   if (!file.exists(output_file))
     next
-  try(expr = {
+  messed_up <- try(expr = {
     lines <- readLines(output_file)
     samples <- stannis::read_stan_data(file=output_file)
     meta <- stannis::read_stan_metadata(output_file)
   }, silent=TRUE) 
-  if (class(samples) == "try-error")
+  if (class(messed_up) == "try-error")
     next
   run_data[i, 'completed_iterations'] <- nrow(samples)
   run_data[i, 'completed_warmup'] <- nrow(samples) > meta[['num_warmup']]
@@ -41,29 +43,50 @@ for (i in 1:n_runs) {
     if (nrow(samples) > 500) {
       r_hat_samples <- samples[sampling, c(1, 8:ncol(samples))]
       run_data[i, 'single_chain_r_hat_mean'] <- sapply(r_hat_samples,
-        rstan:::split_rhat_rfun) %>% mean
+        rstan:::split_rhat_rfun) %>% mean(na.rm=TRUE)
       run_data[i, 'single_chain_r_hat_sd'] <- sapply(r_hat_samples, 
-        rstan:::split_rhat_rfun) %>% sd
+        rstan:::split_rhat_rfun) %>% sd(na.rm=TRUE)
     } else {
       run_data[i, 'single_chain_r_hat_mean'] <- 2
       run_data[i, 'single_chain_r_hat_sd'] <- 2
     }
     if (nrow(samples) == 1500) {
-      run_data[i, 'total_time'] <- stannis::get_total_time(lines)
+      total_time <- stannis::get_total_time(lines)
+      if (!is.na(total_time) && total_time < 30*60) 
+        run_data[i, 'total_time'] <- total_time
+      else
+        run_data[i, 'total_time'] <- NA  
+    }
+    if (grepl(pattern='sample', x=meta[['method']])) {
+      estimates <- rstan::read_stan_csv(output_file) %>% 
+        as.matrix %>% 
+        apply(2, quantile, probs=c(0.05, 0.25, 0.5, 0.75, 0.95)) %>% 
+        t %>% data.frame(check.names=FALSE) %>% 
+        dplyr::mutate(model=run_data[i, 'model'], data=run_data[i, 'data'], 
+          binary_type=run_data[i, 'binary_type'], parameter=rownames(.),
+          chain=run_data[i, 'chain'])
+      if (is.null(all_estimates)) 
+        all_estimates <- estimates
+      else 
+        all_estimates <- rbind(all_estimates, estimates)
     }
   }
 }
 
 saveRDS(run_data, file='run_metadata.rds')
 
-completion <- run_data %>% 
-  dplyr::group_by(binary_type, model) %>% dplyr::summarise(
+warmup_completion <- run_data %>% 
+  dplyr::group_by(model, data, binary_type) %>% dplyr::summarise(
     percent_completed=mean(completed_warmup)*100
   )
 
+sampling_completion <- run_data %>% 
+  dplyr::group_by(model, data, binary_type) %>% dplyr::summarise(
+    percent_completed=mean(completed_sampling)*100
+  )
 
 timing <- run_data %>% 
-  dplyr::group_by(binary_type, model) %>% dplyr::summarise(
+  dplyr::group_by(model, data, binary_type) %>% dplyr::summarise(
     mean_time=mean(total_time, na.rm=TRUE),
     sd_time=sd(total_time, na.rm=TRUE)
   )
@@ -94,4 +117,10 @@ for (i in 1:nrow(run_type)) {
     dplyr::filter(run_type_summary, name %in% c('lp__', non_sampler_parameters)) %>%
     dplyr::select(R_hat) %>% unlist %>% sd
 }
+
+
+pl_scaled_parameters <- ggplot(data=all_estimates %>% dplyr::filter(parameter %in% c('g_alpha', 'g_beta', 'g_delta') & (model != 'gamma-exp-sum-gamma-mix-p2' | data!='gesgm' | binary_type!='fix' | chain != 5)), aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)) + geom_point() + geom_errorbarh() + facet_grid(data ~ parameter, scales='free_x')
+
+pl_internal_parameters <- ggplot(data=all_estimates %>% dplyr::filter(parameter %in% c('mu_0', 'sigma_0', 'alpha_0', 'beta_0', 'delta_0')), aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)) + geom_point() + geom_errorbarh() + facet_grid(data ~ parameter, scales='free_x')
+
 

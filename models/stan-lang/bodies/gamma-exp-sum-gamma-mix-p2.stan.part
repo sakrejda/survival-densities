@@ -7,9 +7,9 @@ parameters {
 }
 
 model {
-  mu_0 ~ normal(0,sigma_log / kappa[5]);
-  sigma_0 ~ normal(0,sigma_log / kappa[6]);
-  delta_0 ~ normal(0, kappa[8] * sigma_log / kappa[7]);
+  mu_0 ~ normal(1,sigma_log / kappa[5]);
+  sigma_0 ~ normal(1,sigma_log / kappa[6]);
+  delta_0 ~ normal(1, kappa[8] * sigma_log / kappa[7]);
   q_0 ~ normal(0, sigma_logit / kappa[8]);
 
   {
@@ -30,7 +30,7 @@ model {
   for ( i in 1:n_obs )
     delta[i] = kappa[3] * exp( (2*kappa[8] + delta_0) * kappa[7]) + beta[i];
   for ( i in 1:n_obs ) 
-      q[i] = kappa[4] * inv_logit( -4 + q_0 * kappa[8]);
+      q[i] = kappa[4] * inv_logit( -2 + q_0 * kappa[8]);
   
   for ( i in 1:n_obs ) {
     target += gamma_exp_sum_gamma_mix_lpdf_1S(t_delta[i], q[i], alpha[i], beta[i], delta[i]);

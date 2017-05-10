@@ -44,16 +44,24 @@ model_names <- c(
 )
 
 model_data <- list(
-  gamma = list(
+  gamma_p1 = list(
     kappa=rep(1,2),  n_parameters=2,
     sigma_log=1/2, sigma_identity=1, sigma_logit=2/3
   ),
-  generalized_gamma = list(
+  generalized_gamma_p1 = list(
     kappa=rep(1,3), n_parameters=3, 
     sigma_log=1/2, sigma_identity=1, sigma_logit=2/3
   ),
-  gamma_exp_sum_gamma_mix = list(
+  generalized_gamma_p2 = list(
+    kappa=rep(1,3), n_parameters=3, 
+    sigma_log=1/2, sigma_identity=1, sigma_logit=2/3
+  ),
+  gamma_exp_sum_gamma_mix_p1 = list(
     kappa=c(10^-1, 10^-1, 1, .2, 1, 1, 1, 1), n_parameters=8, 
+    sigma_log=1/2, sigma_identity=1, sigma_logit=2/3
+  ),
+  gamma_exp_sum_gamma_mix_p2 = list(
+    kappa=c(1, 1, 1, .2, 1, 1, 1, 1), n_parameters=8, 
     sigma_log=1/2, sigma_identity=1, sigma_logit=2/3
   )
 )
@@ -110,7 +118,8 @@ saveRDS(run_data[['model_program']], 'model-program-files.rds')
 for (i in 1:nrow(run_data)) {
   chain_label <- run_data[i, 'chain_label']
   binary <- run_data[i,'model_binary'] 
-  data_data <- c(data[[ run_data[i, 'data'] ]], model_data[[ gsub(pattern='-', replacement='_', x=run_data[i, 'model_type'])]])
+  data_data <- c(data[[ run_data[i, 'data'] ]], 
+    model_data[[ gsub(pattern='-', replacement='_', x=run_data[i, 'model'])]])
   files <- list(
     data = run_data[i, 'data_file'],
     init = NULL,  ## We don't want to require inits.
