@@ -7,6 +7,7 @@ add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/waitup
   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/waitup
   COMMAND export R_LIBS_USER=${R_LIB_DIR}
+  COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/.Renviron ${CMAKE_CURRENT_BINARY_DIR}/.Renviron
   COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/waitup ${CMAKE_CURRENT_BINARY_DIR}
   COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/waitup/inst/include
   COMMAND cp -R ${PROJECT_BINARY_DIR}/code/stan-dev/stan ${CMAKE_CURRENT_BINARY_DIR}/waitup/inst/include/
