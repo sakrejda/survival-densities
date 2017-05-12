@@ -36,7 +36,7 @@ add_custom_target(
 
 add_subdirectory(code)
 add_subdirectory(models)
-add_subdirectory(manuscripts)
+#add_subdirectory(manuscripts)
 add_subdirectory(simulation)
 add_subdirectory(fits)
 

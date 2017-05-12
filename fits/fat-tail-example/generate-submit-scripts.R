@@ -20,7 +20,7 @@ delays <- readRDS("delay-data.rds")
 N_clean <- length(delays[['clean']])
 N_contaminated <- length(delays[['contaminated']])
 
-n_chains <- 10
+n_chains <- 100
 chains <- 1:n_chains
 
 data <- list(
