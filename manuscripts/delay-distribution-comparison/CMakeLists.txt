@@ -11,7 +11,7 @@ add_custom_command(
   COMMAND ln -f -n -s ${PROJECT_SOURCE_DIR}/models/stan-lang/functions functions
   COMMAND ln -f -n -s ${PROJECT_SOURCE_DIR}/references.bib references.bib
   COMMAND ln -f -n -s ${PROJECT_SOURCE_DIR}/code/waitup/waitup/R R
-  COMMAND Rscript -e "knitr::knit('${CMAKE_CURRENT_BINARY_DIR}/${target-name}.Rnw')"
+  COMMAND R_LIBS_USER="../../R/library" Rscript -e "knitr::knit('${CMAKE_CURRENT_BINARY_DIR}/${target-name}.Rnw')"
   DEPENDS ${target-file-path}
   VERBATIM
 )

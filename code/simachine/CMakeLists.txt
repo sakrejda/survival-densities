@@ -2,8 +2,8 @@
 add_custom_command(
   OUTPUT simachine_1.0.tar.gz
   COMMAND git clone https://github.com/sakrejda/simachine.git
-  COMMAND R CMD build simachine
-  COMMAND Rscript -e "install.packages(pkgs='simachine_1.0.tar.gz')" 
+  COMMAND R_LIBS_USER=${R_LIB_DIR} R CMD build simachine
+  COMMAND R CMD INSTALL simachine_1.0.tar.gz --library=${R_LIB_DIR}
   VERBATIM)
 
 add_custom_target(

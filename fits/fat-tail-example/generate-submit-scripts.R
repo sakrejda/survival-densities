@@ -134,7 +134,7 @@ for (i in 1:nrow(run_data)) {
     eo=paste0(run_data[i, 'run_name'], '-terminal-errors.txt'),
     W=paste0("00:30"),
     q=paste0("condo_uma_nicholas_reich"),
-    R=paste("usage[mem=4096]")
+    R=paste("rusage[mem=4096]")
   )
 
   write_cmdstan_pbs(binary, args, pbs_args, prefix=bsub_prefix, pbs_file)

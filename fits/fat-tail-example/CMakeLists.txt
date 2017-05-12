@@ -16,7 +16,7 @@ add_custom_command(
 )
 
 add_custom_target(
-  data-quantiles ALL DEPENDS data-quantiles.rds calculate-data-quantiles.R
+  data-quantiles ALL DEPENDS data-quantiles.rds calculate-data-quantiles.R delay-data
 )
 
 
@@ -46,11 +46,11 @@ add_custom_target(
 find_program(SCHEDULER bsub)
 
 if (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
-  set(FIND_ARGUMENTS ". -name \"\*-job.pbs\" -exec bsub < {} \\$<SEMICOLON>")
+  set(FIND_ARGUMENTS ". -name \"\*-job-tag.pbs\" -exec bsub < {} \\$<SEMICOLON>")
   separate_arguments(FIND_ARGUMENTS)
   add_custom_command(
     OUTPUT model-binary-files.rds model-program-files.rds
-    COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job.pbs
+    COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job-tag.pbs
     COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/generate-submit-scripts.R
     COMMAND find ${FIND_ARGUMENTS}
     DEPENDS delay-data.rds stannis-build

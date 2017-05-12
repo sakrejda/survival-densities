@@ -21,10 +21,10 @@ add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/waitup_${PROJECT_VERSION}.tar.gz
   COMMAND export R_LIBS_USER=${R_LIB_DIR}
   COMMAND Rscript -e "Rcpp:::compileAttributes(pkgdir='waitup')"
-  COMMAND R CMD build ${CMAKE_CURRENT_BINARY_DIR}/waitup
+  COMMAND R_LIBS_USER=${R_LIB_DIR} R CMD build ${CMAKE_CURRENT_BINARY_DIR}/waitup
   COMMAND R CMD INSTALL ${CMAKE_CURRENT_BINARY_DIR}/waitup_${PROJECT_VERSION}.tar.gz --library=${R_LIB_DIR}
   COMMAND Rscript -e ".libPaths(\"${R_LIB_DIR}\"); devtools::document('waitup')"
-  COMMAND R_LIBS_USER={$R_LIB_DIR} R CMD build ${CMAKE_CURRENT_BINARY_DIR}/waitup
+  COMMAND R_LIBS_USER=${R_LIB_DIR} R CMD build ${CMAKE_CURRENT_BINARY_DIR}/waitup
   COMMAND R CMD INSTALL ${CMAKE_CURRENT_BINARY_DIR}/waitup_${PROJECT_VERSION}.tar.gz --library=${R_LIB_DIR}
   DEPENDS waitup-dir stan-functions-hpp 
   VERBATIM)
