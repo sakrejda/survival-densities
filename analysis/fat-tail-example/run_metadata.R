@@ -76,14 +76,10 @@ for (i in 1:n_runs) {
 
 saveRDS(run_data, file='run_metadata.rds')
 
-warmup_completion <- run_data %>% 
+completion <- run_data %>% 
   dplyr::group_by(model, data, binary_type) %>% dplyr::summarise(
-    percent_completed=mean(completed_warmup, na.rm=TRUE)*100
-  )
-
-sampling_completion <- run_data %>% 
-  dplyr::group_by(model, data, binary_type) %>% dplyr::summarise(
-    percent_completed=mean(completed_sampling, na.rm=TRUE)*100
+    warmup=mean(completed_warmup, na.rm=TRUE),
+    sampling=mean(completed_sampling, na.rm=TRUE)
   )
 
 timing <- run_data %>% 
@@ -119,9 +115,50 @@ for (i in 1:nrow(run_type)) {
     dplyr::select(R_hat) %>% unlist %>% sd
 }
 
-library(ggplot2)
-pl_scaled_parameters <- ggplot(data=all_estimates %>% dplyr::filter(parameter %in% c('g_alpha', 'g_beta', 'g_delta') & (model != 'gamma-exp-sum-gamma-mix-p2' | data!='gesgm' | binary_type!='fix' | chain != 5)), aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)) + geom_point() + geom_errorbarh() + facet_grid(data ~ parameter, scales='free_x')
 
-pl_internal_parameters <- ggplot(data=all_estimates %>% dplyr::filter(parameter %in% c('mu_0', 'sigma_0', 'alpha_0', 'beta_0', 'delta_0')), aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)) + geom_point() + geom_errorbarh() + facet_grid(data ~ parameter, scales='free_x')
+## Tables:
+tbl_completion <- completion %>%  
+  dplyr::arrange(data, binary_type, model) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(
+    `warmup (%)` = paste0(warmup*100), 
+    `sampling (%)` = paste0(sampling*100),
+    data = dplyr::if_else(as.character(data) == 'gesgm', 'GESGM', 'Gamma')
+  ) %>% dplyr::select(-warmup, -sampling)
+
+completed <- completion %>% 
+  dplyr::filter(sampling > 0.8) %>% 
+  dplyr::select(model, data, binary_type)
+
+tbl_timing <- timing %>%
+  dplyr::right_join(completed) %>%  
+  dplyr::arrange(data, binary_type, model) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(
+    `mean (s)` = dplyr::if_else(is.na(mean_time), "", paste0(round(mean_time, 0))), 
+    `sd (s)` = dplyr::if_else(is.na(sd_time), "", paste0(round(sd_time, 0))),
+    data = dplyr::if_else(as.character(data) == 'gesgm', 'GESGM', 'Gamma')
+  ) %>% dplyr::select(-mean_time, -sd_time) 
+
+library(ggplot2)
+my_theme <- function() theme_minimal() + theme()
+
+pl_scaled_parameters <- ggplot(
+  data=all_estimates %>% dplyr::filter(
+    parameter %in% c('g_alpha', 'g_beta', 'g_q', 'g_delta')), 
+  aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)
+) + geom_point() + geom_errorbarh() + 
+    facet_grid(data ~ parameter, scales='free_x') +
+    my_theme()
+
+pl_internal_parameters <- ggplot(
+  data=all_estimates %>% dplyr::filter(
+    parameter %in% c('mu_0', 'sigma_0', 'alpha_0', 'beta_0', 'delta_0', 'q_0'),
+    model != 'generalized-gamma-p2'
+  ),
+  aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)
+) + geom_point() + geom_errorbarh() + 
+    facet_grid(data ~ parameter, scales='free_x') +
+    my_theme()
 
 
