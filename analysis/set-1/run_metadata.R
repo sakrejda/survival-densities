@@ -1,6 +1,6 @@
 library(magrittr)
 
-output_path <- '../../fits/fat-tail-example'
+output_path <- '../../fits/set-1'
 
 run_data <- readRDS(file=file.path(output_path, 'run-data.rds'))
 n_runs <- nrow(run_data)
@@ -8,7 +8,6 @@ n_runs <- nrow(run_data)
 run_data <- dplyr::mutate(run_data, 
   completed_iterations = 0,
   completed_warmup = FALSE,
-  completed_sampling = FALSE,
   sampling_stepsize = NULL,
   sampling_divergence_count = NULL,
   sampling_n_leapfrog_mean = NULL,
@@ -77,24 +76,24 @@ for (i in 1:n_runs) {
 saveRDS(run_data, file='run_metadata.rds')
 
 warmup_completion <- run_data %>% 
-  dplyr::group_by(model, data, binary_type) %>% dplyr::summarise(
-    percent_completed=mean(completed_warmup, na.rm=TRUE)*100
+  dplyr::group_by(model, data_type) %>% dplyr::summarise(
+    percent_completed=mean(completed_warmup)*100
   )
 
 sampling_completion <- run_data %>% 
-  dplyr::group_by(model, data, binary_type) %>% dplyr::summarise(
-    percent_completed=mean(completed_sampling, na.rm=TRUE)*100
+  dplyr::group_by(model, data_type) %>% dplyr::summarise(
+    percent_completed=mean(completed_sampling)*100
   )
 
 timing <- run_data %>% 
-  dplyr::group_by(model, data, binary_type) %>% dplyr::summarise(
+  dplyr::group_by(model, data_type) %>% dplyr::summarise(
     mean_time=mean(total_time, na.rm=TRUE),
     sd_time=sd(total_time, na.rm=TRUE)
   )
 
 run_type <- run_data %>% dplyr::filter(completed_sampling) %>% 
-  dplyr::select(model, data, binary_type, output_file) %>%
-  dplyr::group_by(model, data, binary_type) %>% 
+  dplyr::select(model, data_type output_file) %>%
+  dplyr::group_by(model, data_type) %>% 
   dplyr::summarise(output_file=paste(file.path(output_path, output_file), collapse=' ')) %>%
   lapply(as.character) %>% data.frame(stringsAsFactors=FALSE)
 
@@ -119,9 +118,22 @@ for (i in 1:nrow(run_type)) {
     dplyr::select(R_hat) %>% unlist %>% sd
 }
 
-library(ggplot2)
-pl_scaled_parameters <- ggplot(data=all_estimates %>% dplyr::filter(parameter %in% c('g_alpha', 'g_beta', 'g_delta') & (model != 'gamma-exp-sum-gamma-mix-p2' | data!='gesgm' | binary_type!='fix' | chain != 5)), aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)) + geom_point() + geom_errorbarh() + facet_grid(data ~ parameter, scales='free_x')
 
-pl_internal_parameters <- ggplot(data=all_estimates %>% dplyr::filter(parameter %in% c('mu_0', 'sigma_0', 'alpha_0', 'beta_0', 'delta_0')), aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)) + geom_point() + geom_errorbarh() + facet_grid(data ~ parameter, scales='free_x')
+pl_scaled_parameters <- ggplot(
+  data=all_estimates %>% dplyr::filter(
+    parameter %in% c('g_alpha', 'g_beta', 'g_delta') & 
+    (model != 'gamma-exp-sum-gamma-mix-p2' | data!='gesgm' | binary_type!='fix' | chain != 5)), 
+  aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)
+) + geom_point() + 
+    geom_errorbarh() + 
+    facet_grid(data_type ~ parameter, scales='free_x')
+
+pl_internal_parameters <- ggplot(
+  data=all_estimates %>% dplyr::filter(
+    parameter %in% c('mu_0', 'sigma_0', 'alpha_0', 'beta_0', 'delta_0')), 
+  aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)
+) + geom_point() + 
+    geom_errorbarh() + 
+    facet_grid(data_type ~ parameter, scales='free_x')
 
 

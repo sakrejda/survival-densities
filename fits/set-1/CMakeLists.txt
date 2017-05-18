@@ -6,7 +6,7 @@ add_custom_command(
 )
 
 add_custom_target(
-  delay-data ALL DEPENDS delay-data.rds data.R
+  set-1-delay-data ALL DEPENDS delay-data.rds data.R
 )
 
 find_program(SCHEDULER bsub)
@@ -38,5 +38,5 @@ else (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
 endif (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
 
 add_custom_target(
-  set-1-runs ALL DEPENDS model-binary-files.rds model-program-files.rds)
+  set-1-runs ALL DEPENDS model-binary-files.rds model-program-files.rds set-1-delay-data)
 
