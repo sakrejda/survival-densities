@@ -11,10 +11,10 @@ N <- 10^3;
 
 theta <- list(
   alpha = c(1, 1.5, 8, 20),
-  beta = c(0.1, 1.5, 10, 20),
+  beta = 1,
   q = c(0.05, 0.1, 0.5),
-  delta = c(5, 10, 100),
-  replicate = 1:10
+  delta = 15,
+  replicate = 1:100
 )
 
 theta_grid <- do.call(what=expand.grid, args=theta)
