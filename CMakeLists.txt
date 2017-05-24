@@ -23,7 +23,7 @@ add_custom_target(
 )
 
 add_custom_command(
-  OUTPUT R
+  OUTPUT R/library/knitr
   COMMAND mkdir -p ${R_LIB_DIR}
   COMMAND Rscript ${PROJECT_SOURCE_DIR}/packages.R ${PROJECT_SOURCE_DIR} noupdate
   VERBATIM
