@@ -12,26 +12,17 @@ set(STAN_MODEL_FIX_DIR ${PROJECT_BINARY_DIR}/models/stan-lang/full)
 set(R_LIB_DIR ${PROJECT_BINARY_DIR}/R/library)
 set(ENV{R_LIBS_USER} ${R_LIB_DIR})
 
-add_custom_command(
-  OUTPUT ${PROJECT_BINARY_DIR}/utilities.R
-  COMMAND cp ${PROJECT_SOURCE_DIR}/utilities.R ${PROJECT_BINARY_DIR}
-  COMMAND touch ${PROJECT_BINARY_DIR}/utilities.done
-)
-
-add_custom_target(
-  utilities-code ALL DEPENDS ${PROJECT_BINARY_DIR}/utilities.R
-)
 
 add_custom_command(
   OUTPUT R/library/knitr
   COMMAND mkdir -p ${R_LIB_DIR}
   COMMAND Rscript ${PROJECT_SOURCE_DIR}/packages.R ${PROJECT_SOURCE_DIR} noupdate
   VERBATIM
-  DEPENDS packages.R R-libraries.txt simachine-build
+  DEPENDS packages.R R-libraries.txt
 )
 
 add_custom_target(
-  r-environment ALL DEPENDS R
+  r-environment ALL DEPENDS R/library/knitr
 )
 
 add_subdirectory(code)
