@@ -12,6 +12,25 @@ set(STAN_MODEL_FIX_DIR ${PROJECT_BINARY_DIR}/models/stan-lang/full)
 set(R_LIB_DIR ${PROJECT_BINARY_DIR}/R/library)
 set(ENV{R_LIBS_USER} ${R_LIB_DIR})
 
+find_program(BSUB bsub)
+if (NOT ${BSUB} STREQUAL BSUB-NOTFOUND)
+  set(IS_BSUB TRUE)
+  set(SCHEDULER "bsub")
+else (NOT ${BSUB} STREQUAL BSUB-NOTFOUND)
+  set(IS_BSUB FALSE)
+endif(NOT ${BSUB} STREQUAL BSUB-NOTFOUND)
+
+find_program(QSUB qsub)
+if (NOT ${QSUB} STREQUAL QSUB-NOTFOUND)
+  set(IS_QSUB TRUE)
+  set(SCHEDULER "qsub")
+else (NOT ${QSUB} STREQUAL QSUB-NOTFOUND)
+  set(IS_QSUB FALSE)
+endif (NOT ${QSUB} STREQUAL QSUB-NOTFOUND)
+
+if (IS_BSUB OR IS_QSUB)
+  set(HAS_SCHEDULER TRUE)
+endif (IS_BSUB OR IS_QSUB)
 
 add_custom_command(
   OUTPUT R/library/knitr
@@ -25,9 +44,8 @@ add_custom_target(
   r-environment ALL DEPENDS R/library/knitr
 )
 
-add_subdirectory(code)
-add_subdirectory(models)
 #add_subdirectory(manuscripts)
 add_subdirectory(simulation)
 add_subdirectory(fits)
+add_subdirectory(analysis)
 
