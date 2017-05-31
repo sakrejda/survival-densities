@@ -7,10 +7,10 @@ string (REGEX REPLACE "\\.Rnw" "" target-name ${target-file} )
 add_custom_command(
   OUTPUT ${target-name}.tex
   COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/${target-file} ${CMAKE_CURRENT_BINARY_DIR}/
-  COMMAND ln -f -n -s ${PROJECT_SOURCE_DIR}/models/stan-lang/full full
-  COMMAND ln -f -n -s ${PROJECT_SOURCE_DIR}/models/stan-lang/functions functions
+  COMMAND ln -f -n -s ${TOOLING_DIR}/models/stan-lang/full full
+  COMMAND ln -f -n -s ${TOOLING_DIR}/models/stan-lang/functions functions
+  COMMAND ln -f -n -s ${TOOLING_DIR}/code/waitup/waitup/R R
   COMMAND ln -f -n -s ${PROJECT_SOURCE_DIR}/references.bib references.bib
-  COMMAND ln -f -n -s ${PROJECT_SOURCE_DIR}/code/waitup/waitup/R R
   COMMAND R_LIBS_USER="../../R/library" Rscript -e "knitr::knit('${CMAKE_CURRENT_BINARY_DIR}/${target-name}.Rnw')"
   DEPENDS ${target-file-path}
   VERBATIM

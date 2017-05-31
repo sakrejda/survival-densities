@@ -19,7 +19,7 @@ if (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
     COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job-tag.pbs
     COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/generate-submit-scripts.R
     COMMAND find ${FIND_ARGUMENTS}
-    DEPENDS delay-data.rds stannis-build
+    DEPENDS delay-data.rds 
   )
 else (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
   set(FIND_ARGUMENTS_1 ". -name \"\*-job-tag.pbs\" -exec chmod 755 {} \\$<SEMICOLON>")
@@ -33,7 +33,7 @@ else (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
     COMMAND find ${FIND_ARGUMENTS_1}
     COMMAND find ${FIND_ARGUMENTS_2}
     COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/run.R job-files.txt ${CMAKE_CURRENT_SOURCE_DIR}
-    DEPENDS delay-data.rds stannis-build
+    DEPENDS delay-data.rds 
   )
 endif (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
 

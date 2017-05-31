@@ -52,10 +52,10 @@ if (IS_CLUSTER)
     COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job-tag.pbs
     COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/generate-submit-scripts.R
     COMMAND find ${FIND_ARGUMENTS}
-    DEPENDS delay-data.rds stannis-build
+    DEPENDS delay-data.rds 
   )
   add_custom_target(
     fat-tail-example-model-runs ALL DEPENDS model-binary-files.rds model-program-files.rds)
-endif (NOT ${SCHEDULER} STREQUAL SCHEDULER-NOTFOUND)
+endif (IS_CLUSTER)
 
 
