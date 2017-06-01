@@ -142,7 +142,8 @@ for (i in 1:nrow(run_data)) {
     q=paste0("condo_uma_nicholas_reich"),
     R=paste("rusage[mem=4096]")
   )
-
+  if (file.exists(pbs_file))
+    file.remove(pbs_file)
   write_cmdstan_pbs(binary, args, pbs_args, prefix=bsub_prefix, pbs_file)
 
   my_rdump(data_data, file=run_data[i, 'data_file'])
