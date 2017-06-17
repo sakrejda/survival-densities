@@ -62,7 +62,7 @@ for (i in 1:n_runs) {
         as.matrix %>% 
         apply(2, quantile, probs=c(0.05, 0.25, 0.5, 0.75, 0.95)) %>% 
         t %>% data.frame(check.names=FALSE) %>% 
-        dplyr::mutate(model=run_data[i, 'model'], data=run_data[i, 'data'], 
+        dplyr::mutate(model=run_data[i, 'model'], data=run_data[i, 'data_file'], 
           binary_type=run_data[i, 'binary_type'], parameter=rownames(.),
           chain=run_data[i, 'chain'])
       if (is.null(all_estimates)) 
@@ -91,16 +91,20 @@ timing <- run_data %>%
     sd_time=sd(total_time, na.rm=TRUE)
   )
 
+theta_grid <- readRDS('../../fits/set-1/theta.rds') %>% 
+  dplyr::mutate(data_sets=1:n()) %>% 
+  dplyr::right_join(run_data, 'data_sets')
+
 run_type <- run_data %>% dplyr::filter(completed_sampling) %>% 
-  dplyr::select(model, data_type output_file) %>%
-  dplyr::group_by(model, data_type) %>% 
+  dplyr::select(model, data_sets, output_file) %>%
+  dplyr::group_by(model, data_sets) %>% 
   dplyr::summarise(output_file=paste(file.path(output_path, output_file), collapse=' ')) %>%
   lapply(as.character) %>% data.frame(stringsAsFactors=FALSE)
 
 for (i in 1:nrow(run_type)) {
   binary <- '../../code/stan-dev/cmdstan/bin/stansummary'
   files <- run_type[i, 'output_file']
-  out <- paste0(run_type[i, 'model'], "-on-", run_type[i, 'data'],
+  out <- paste0(run_type[i, 'model'], "-on-", run_type[i, 'data_file'],
     "-with-", run_type[i, 'binary_type'], "-stan-summary.csv")
   if (file.exists(out)) file.remove(out)
   cmd <- paste(binary, files, paste0("--csv_file=", out))
@@ -121,12 +125,11 @@ for (i in 1:nrow(run_type)) {
 
 pl_scaled_parameters <- ggplot(
   data=all_estimates %>% dplyr::filter(
-    parameter %in% c('g_alpha', 'g_beta', 'g_delta') & 
-    (model != 'gamma-exp-sum-gamma-mix-p2' | data!='gesgm' | binary_type!='fix' | chain != 5)), 
+    parameter %in% c('g_alpha', 'g_beta', 'g_delta')),
   aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)
-) + geom_point() + 
+) + geom_jitter() + 
     geom_errorbarh() + 
-    facet_grid(data_type ~ parameter, scales='free_x')
+    facet_wrap( ~ parameter, scales='free_x', nrow=2, ncol=2)
 
 pl_internal_parameters <- ggplot(
   data=all_estimates %>% dplyr::filter(
@@ -134,6 +137,6 @@ pl_internal_parameters <- ggplot(
   aes(xmin=`25%`, x=`50%`, xmax=`95%`, y=model, colour=binary_type)
 ) + geom_point() + 
     geom_errorbarh() + 
-    facet_grid(data_type ~ parameter, scales='free_x')
+    facet_grid( ~ parameter, scales='free_x')
 
 
