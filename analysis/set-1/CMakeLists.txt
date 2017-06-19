@@ -1,7 +1,7 @@
 
 add_custom_command(
   OUTPUT run_metadata.rds
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/run_metadata.R')"
+  COMMAND "R_LIBS_USER=${R_LIB_DIR}" Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/run_metadata.R')"
   VERBATIM
 )
 

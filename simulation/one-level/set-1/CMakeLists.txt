@@ -2,7 +2,7 @@
 add_custom_command(
   OUTPUT N-alpha-beta-nu.rds
   COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/parameters.yaml ${CMAKE_CURRENT_BINARY_DIR}
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/make-parameter-points.R')"
+  COMMAND "R_LIBS_USER=${R_LIB_DIR}" Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/make-parameter-points.R')"
   VERBATIM
 )
 
@@ -12,7 +12,7 @@ add_custom_target(
 
 add_custom_command(
   OUTPUT gamma-p1-data-target.rds weibull-p1-data-target.rds generalized-gamma-p1-data-target.rds
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/make-data-targets.R')"
+  COMMAND "R_LIBS_USER=${R_LIB_DIR}" Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/make-data-targets.R')"
   VERBATIM
 )
 
@@ -24,7 +24,7 @@ add_custom_target(
 add_custom_command(
   OUTPUT data 
   COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/make-data-sets.R')"
+  COMMAND "R_LIBS_USER=${R_LIB_DIR}" Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/make-data-sets.R')"
   VERBATIM
 )
 

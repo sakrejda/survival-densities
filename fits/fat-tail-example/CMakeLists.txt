@@ -1,7 +1,7 @@
 
 add_custom_command(
   OUTPUT delay-data.rds
-  COMMAND Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/good-data-feelings-data.R')"
+  COMMAND "R_LIBS_USER=${R_LIB_DIR}" Rscript -e "source('${CMAKE_CURRENT_SOURCE_DIR}/good-data-feelings-data.R')"
   VERBATIM
 )
 
@@ -16,7 +16,7 @@ if (IS_CLUSTER)
   add_custom_command(
     OUTPUT model-binary-files.rds model-program-files.rds
     COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/*-job-tag.pbs
-    COMMAND Rscript ${CMAKE_CURRENT_SOURCE_DIR}/generate-submit-scripts.R
+    COMMAND "R_LIBS_USER=${R_LIB_DIR}" Rscript ${CMAKE_CURRENT_SOURCE_DIR}/generate-submit-scripts.R
     COMMAND find ${FIND_ARGUMENTS}
     DEPENDS delay-data.rds 
   )
