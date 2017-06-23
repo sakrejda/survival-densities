@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.2.2)
-project (delay-analysis-method VERSION 0.0.0.9000)
+project (survival-densities VERSION 0.0.0.9000)
 
 set(TOOLING_DIR ~/output-store/tooling)
 
